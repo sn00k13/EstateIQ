@@ -1,0 +1,21 @@
+{
+  "name": "@estateiq/database",
+  "version": "0.0.1",
+  "main": "./index.ts",
+  "scripts": {
+    "generate": "prisma generate",
+    "migrate": "prisma migrate dev",
+    "studio": "prisma studio"
+  },
+  "keywords": [],
+  "author": "Bubble Barrel Commerce Limited",
+  "license": "ISC",
+  "description": "EstateIQ Database",
+  "devDependencies": {
+    "dotenv": "^17.3.1",
+    "prisma": "^6.19.2"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.2"
+  }
+}

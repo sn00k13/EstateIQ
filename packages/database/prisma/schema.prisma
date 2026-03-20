@@ -1,0 +1,294 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── TENANT ───────────────────────────────────────────────
+model AuthUser {
+  id           String   @id @default(cuid())
+  name         String?
+  email        String   @unique
+  passwordHash String?
+  image        String?
+  createdAt    DateTime @default(now())
+}
+
+model Estate {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  address     String?
+  logoUrl     String?
+  plan        Plan     @default(FREE)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  units              Unit[]
+  residents          Resident[]
+  announcements      Announcement[]
+  levies             Levy[]
+  visitors           Visitor[]
+  maintenanceRequests MaintenanceRequest[]
+  facilities         Facility[]
+  polls              Poll[]
+  incidents          SecurityIncident[]
+}
+
+// ─── UNITS & RESIDENTS ────────────────────────────────────
+model Unit {
+  id        String  @id @default(cuid())
+  estateId  String
+  estate    Estate  @relation(fields: [estateId], references: [id])
+  number    String
+  block     String?
+  type      String? // e.g. "3 bedroom duplex"
+
+  residents Resident[]
+  payments  Payment[]
+}
+
+model Resident {
+  id        String   @id @default(cuid())
+  estateId  String
+  estate    Estate   @relation(fields: [estateId], references: [id])
+  userId    String   @unique
+  unitId    String?
+  unit      Unit?    @relation(fields: [unitId], references: [id])
+  role      Role     @default(RESIDENT)
+  firstName String
+  lastName  String
+  email     String
+  phone     String?
+  avatarUrl String?
+  isActive  Boolean  @default(true)
+  joinedAt  DateTime @default(now())
+
+  payments  Payment[]
+  visitors  Visitor[]
+  bookings  FacilityBooking[]
+  votes     Vote[]
+}
+
+// ─── ANNOUNCEMENTS ────────────────────────────────────────
+model Announcement {
+  id        String             @id @default(cuid())
+  estateId  String
+  estate    Estate             @relation(fields: [estateId], references: [id])
+  title     String
+  body      String
+  priority  AnnouncementPriority @default(NORMAL)
+  createdAt DateTime           @default(now())
+}
+
+// ─── DUES & LEVIES ────────────────────────────────────────
+model Levy {
+  id          String   @id @default(cuid())
+  estateId    String
+  estate      Estate   @relation(fields: [estateId], references: [id])
+  title       String
+  description String?
+  amount      Float
+  currency    String   @default("NGN")
+  dueDate     DateTime
+  createdAt   DateTime @default(now())
+
+  payments    Payment[]
+}
+
+model Payment {
+  id          String        @id @default(cuid())
+  levyId      String
+  levy        Levy          @relation(fields: [levyId], references: [id])
+  residentId  String
+  resident    Resident      @relation(fields: [residentId], references: [id])
+  unitId      String
+  unit        Unit          @relation(fields: [unitId], references: [id])
+  amount      Float
+  currency    String        @default("NGN")
+  status      PaymentStatus @default(PENDING)
+  reference   String?       @unique
+  paidAt      DateTime?
+  createdAt   DateTime      @default(now())
+}
+
+// ─── VISITOR MANAGEMENT ───────────────────────────────────
+model Visitor {
+  id          String        @id @default(cuid())
+  estateId    String
+  estate      Estate        @relation(fields: [estateId], references: [id])
+  residentId  String
+  resident    Resident      @relation(fields: [residentId], references: [id])
+  name        String
+  phone       String?
+  purpose     String?
+  accessCode  String        @unique
+  status      VisitorStatus @default(EXPECTED)
+  expectedAt  DateTime
+  arrivedAt   DateTime?
+  exitedAt    DateTime?
+  createdAt   DateTime      @default(now())
+}
+
+// ─── MAINTENANCE ──────────────────────────────────────────
+model MaintenanceRequest {
+  id          String            @id @default(cuid())
+  estateId    String
+  estate      Estate            @relation(fields: [estateId], references: [id])
+  title       String
+  description String
+  category    String
+  priority    MaintenancePriority @default(MEDIUM)
+  status      MaintenanceStatus @default(OPEN)
+  mediaUrls   String[]
+  submittedBy String
+  assignedTo  String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+}
+
+// ─── FACILITIES ───────────────────────────────────────────
+model Facility {
+  id          String   @id @default(cuid())
+  estateId    String
+  estate      Estate   @relation(fields: [estateId], references: [id])
+  name        String
+  description String?
+  capacity    Int?
+  feePerSlot  Float    @default(0)
+
+  bookings    FacilityBooking[]
+}
+
+model FacilityBooking {
+  id          String         @id @default(cuid())
+  facilityId  String
+  facility    Facility       @relation(fields: [facilityId], references: [id])
+  residentId  String
+  resident    Resident       @relation(fields: [residentId], references: [id])
+  startTime   DateTime
+  endTime     DateTime
+  status      BookingStatus  @default(PENDING)
+  createdAt   DateTime       @default(now())
+}
+
+// ─── POLLS & VOTING ───────────────────────────────────────
+model Poll {
+  id          String   @id @default(cuid())
+  estateId    String
+  estate      Estate   @relation(fields: [estateId], references: [id])
+  question    String
+  options     String[]
+  endsAt      DateTime
+  isAnonymous Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  votes       Vote[]
+}
+
+model Vote {
+  id          String   @id @default(cuid())
+  pollId      String
+  poll        Poll     @relation(fields: [pollId], references: [id])
+  residentId  String
+  resident    Resident @relation(fields: [residentId], references: [id])
+  optionIndex Int
+  createdAt   DateTime @default(now())
+
+  @@unique([pollId, residentId])
+}
+
+// ─── SECURITY INCIDENTS ───────────────────────────────────
+model SecurityIncident {
+  id          String           @id @default(cuid())
+  estateId    String
+  estate      Estate           @relation(fields: [estateId], references: [id])
+  title       String
+  description String
+  severity    IncidentSeverity @default(LOW)
+  location    String?
+  mediaUrls   String[]
+  reportedBy  String
+  resolvedAt  DateTime?
+  createdAt   DateTime         @default(now())
+}
+
+model InviteToken {
+  id         String   @id @default(cuid())
+  token      String   @unique
+  email      String
+  estateId   String
+  residentId String
+  usedAt     DateTime?
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+}
+
+// ─── ENUMS ────────────────────────────────────────────────
+enum Plan {
+  FREE
+  BASIC
+  PRO
+  ENTERPRISE
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  SECURITY
+  RESIDENT
+}
+
+enum AnnouncementPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum VisitorStatus {
+  EXPECTED
+  ARRIVED
+  EXITED
+  CANCELLED
+}
+
+enum MaintenancePriority {
+  LOW
+  MEDIUM
+  HIGH
+  EMERGENCY
+}
+
+enum MaintenanceStatus {
+  OPEN
+  ASSIGNED
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+enum IncidentSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
