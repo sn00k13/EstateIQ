@@ -1,11 +1,12 @@
 import NextAuth from 'next-auth'
-import Google from 'next-auth/providers/google'
 import Credentials from 'next-auth/providers/credentials'
 import bcrypt from 'bcryptjs'
+import authConfig from './auth.config'
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  ...authConfig,
   providers: [
-    Google,
+    ...authConfig.providers,
     Credentials({
       name: 'Email & Password',
       credentials: {
@@ -33,34 +34,4 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
     }),
   ],
-  callbacks: {
-    async session({ session, token }) {
-      if (token.sub) session.user.id = token.sub
-      return session
-    },
-    async jwt({ token, user }) {
-      if (user) token.sub = user.id
-      return token
-    },
-  },
-  pages: {
-    signIn: '/sign-in',
-    newUser: '/onboarding',
-  },
-  session: {
-    strategy:    'jwt',
-    maxAge:      60 * 60 * 24 * 7,  // 7 days
-    updateAge:   60 * 60 * 24,       // refresh token daily if active
-  },
-
-  cookies: {
-    sessionToken: {
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path:     '/',
-        secure:   process.env.NODE_ENV === 'production',
-      },
-    },
-  },
 })

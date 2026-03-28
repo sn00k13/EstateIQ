@@ -1,6 +1,10 @@
-import { auth } from '@/lib/auth'
+import NextAuth from 'next-auth'
+import authConfig from '@/lib/auth.config'
 import { NextResponse } from 'next/server'
 import { jwtVerify } from 'jose'
+
+/** Edge-safe: no Prisma — JWT sessions still validate for credential sign-ins. */
+const { auth } = NextAuth(authConfig)
 
 const SECRET = new TextEncoder().encode(process.env.AUTH_SECRET!)
 
