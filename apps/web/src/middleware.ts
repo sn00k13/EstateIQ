@@ -9,6 +9,7 @@ const { auth } = NextAuth(authConfig)
 const SECRET = new TextEncoder().encode(process.env.AUTH_SECRET!)
 
 const publicPaths = [
+  '/',
   '/sign-in',
   '/sign-up',
   '/api/auth',
