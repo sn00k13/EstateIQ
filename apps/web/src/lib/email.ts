@@ -1,26 +1,73 @@
 import nodemailer from 'nodemailer'
 import { getPublicAppOrigin } from '@/lib/appUrl'
 
-const transporter = nodemailer.createTransport({
-  host:   process.env.SMTP_HOST!,
-  port:   Number(process.env.SMTP_PORT ?? 587),
-  secure: process.env.SMTP_SECURE === 'true',
-  auth: {
-    user: process.env.SMTP_USER!,
-    pass: process.env.SMTP_PASS!,
-  },
-  tls: {
-    // Do not fail on invalid certificates
-    rejectUnauthorized: false,
-  },
-})
-
-// Verify connection on startup
-transporter.verify((error) => {
-  if (error) {
-    console.error('[Email] SMTP connection failed:', error.message)
+/** Prefer dedicated SMTP_*; fall back to MAILER_SMTP_* (same as contact form) so Netlify can use one set of vars. */
+function resolveSmtpConfig():
+  | { host: string; port: number; secure: boolean; user: string; pass: string }
+  | null {
+  const h1 = process.env.SMTP_HOST?.trim()
+  const u1 = process.env.SMTP_USER?.trim()
+  const p1 = process.env.SMTP_PASS?.trim()
+  if (h1 && u1 && p1) {
+    return {
+      host:   h1,
+      port:   Number(process.env.SMTP_PORT ?? 587),
+      secure: process.env.SMTP_SECURE === 'true',
+      user:   u1,
+      pass:   p1,
+    }
   }
-})
+  const h2 = process.env.MAILER_SMTP_HOST?.trim()
+  const u2 = process.env.MAILER_SMTP_USER?.trim()
+  const p2 = process.env.MAILER_SMTP_PASS?.trim()
+  if (h2 && u2 && p2) {
+    return {
+      host:   h2,
+      port:   Number(process.env.MAILER_SMTP_PORT ?? 465),
+      secure: process.env.MAILER_SMTP_SECURE !== 'false',
+      user:   u2,
+      pass:   p2,
+    }
+  }
+  return null
+}
+
+let cachedTransporter: nodemailer.Transporter | null = null
+let cachedCfgKey: string | null = null
+
+function getMailTransporter(): nodemailer.Transporter | null {
+  const cfg = resolveSmtpConfig()
+  if (!cfg) return null
+  const key = `${cfg.host}:${cfg.port}:${cfg.secure}:${cfg.user}`
+  if (cachedTransporter && cachedCfgKey === key) return cachedTransporter
+  cachedTransporter = nodemailer.createTransport({
+    host:   cfg.host,
+    port:   cfg.port,
+    secure: cfg.secure,
+    auth:   { user: cfg.user, pass: cfg.pass },
+    tls:    { rejectUnauthorized: false },
+  })
+  cachedCfgKey = key
+  return cachedTransporter
+}
+
+export function getTransactionalFromAddress(): string {
+  return (
+    process.env.SMTP_FROM?.trim() ||
+    process.env.MAILER_SMTP_FROM?.trim() ||
+    `Kynjo.Homes <${process.env.CONTACT_INBOX_EMAIL?.trim() || 'contact@kynjo.homes'}>`
+  )
+}
+
+function assertMailerConfigured(): nodemailer.Transporter {
+  const t = getMailTransporter()
+  if (!t) {
+    const err = new Error('Transactional mailer is not configured (set SMTP_* or MAILER_SMTP_*)')
+    ;(err as Error & { code?: string }).code = 'MAILER_UNCONFIGURED'
+    throw err
+  }
+  return t
+}
 
 /** Logo row + Body marker — identical to invite emails (img points at public /logo.png on app origin). */
 function emailLogoRowHtml(logoUrl: string) {
@@ -50,8 +97,8 @@ export async function sendInviteEmail({
   const baseUrl = getPublicAppOrigin()
   const logoUrl = `${baseUrl}/logo.png`
 
-  await transporter.sendMail({
-    from:     process.env.SMTP_FROM,
+  await assertMailerConfigured().sendMail({
+    from:     getTransactionalFromAddress(),
     to,
     subject:  `You have been invited to join ${estateName} on Kynjo.Homes`,
     // Plain text fallback
@@ -161,8 +208,8 @@ export async function sendOnboardingWelcomeEmail({
   const baseUrl = getPublicAppOrigin()
   const logoUrl = `${baseUrl}/logo.png`
 
-  await transporter.sendMail({
-    from: process.env.SMTP_FROM,
+  await assertMailerConfigured().sendMail({
+    from: getTransactionalFromAddress(),
     to,
     subject: `Welcome — ${estateName} is live on Kynjo.Homes`,
     text: `
@@ -246,8 +293,8 @@ export async function sendPasswordResetEmail({
 }: {
   to: string; name: string; resetUrl: string
 }) {
-  await transporter.sendMail({
-    from:    process.env.SMTP_FROM,
+  await assertMailerConfigured().sendMail({
+    from:    getTransactionalFromAddress(),
     to,
     subject: 'Reset your Kynjo.Homes password',
     text:    `Hello ${name},\n\nClick this link to reset your password:\n${resetUrl}\n\nThis link expires in 1 hour. If you did not request this, ignore this email.`,
