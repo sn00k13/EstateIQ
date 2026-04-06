@@ -20,11 +20,31 @@ function readDatabaseUrlFromEnv(): string | undefined {
     return fromGlobal.trim()
   }
 
-  const reflect = Reflect.get(process.env, 'DATABASE_URL')
-  if (typeof reflect === 'string' && reflect.trim().length > 0) return reflect.trim()
+  const env =
+    typeof process !== 'undefined' && process.env ? process.env : undefined
+  if (!env) return undefined
 
-  const dyn = process.env['DATABASE' + '_' + 'URL'] as string | undefined
-  if (typeof dyn === 'string' && dyn.trim().length > 0) return dyn.trim()
+  const tryKey = (k: string): string | undefined => {
+    const v = Reflect.get(env, k)
+    if (typeof v === 'string' && v.trim().length > 0) return v.trim()
+    return undefined
+  }
+
+  // Avoid static `process.env.DATABASE_URL` — Next may inline it as undefined at build time.
+  const computed = tryKey(['DATABASE', 'URL'].join('_'))
+  if (computed) return computed
+
+  // Some bundlers leave a live env object; enumeration can still see runtime keys (e.g. Netlify).
+  try {
+    for (const key of Object.keys(env)) {
+      if (key === 'DATABASE_URL') {
+        const v = env[key as keyof typeof env]
+        if (typeof v === 'string' && v.trim().length > 0) return v.trim()
+      }
+    }
+  } catch {
+    // ignore
+  }
 
   return undefined
 }

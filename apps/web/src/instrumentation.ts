@@ -1,6 +1,6 @@
 const GLOBAL_KEY = '__ESTATEIQ_DATABASE_URL__' as const
 
-/** Dynamic import keeps `node:fs` out of static analysis for non-Node bundles. */
+/** Dynamic import keeps `node:fs` out of the module graph until `register()` runs (Node only). */
 async function readDatabaseUrlFromLinuxProc(): Promise<string | undefined> {
   if (typeof process === 'undefined' || process.platform === 'win32') return undefined
   try {
@@ -24,7 +24,10 @@ async function readDatabaseUrlFromLinuxProc(): Promise<string | undefined> {
  * Falls back to /proc/self/environ on Linux (real OS env on Netlify).
  */
 export async function register() {
-  let url = process.env.DATABASE_URL
+  let url: string | undefined =
+    typeof process !== 'undefined'
+      ? Reflect.get(process.env, ['DATABASE', 'URL'].join('_'))
+      : undefined
   if (typeof url !== 'string' || url.trim().length === 0) {
     url = await readDatabaseUrlFromLinuxProc()
   }

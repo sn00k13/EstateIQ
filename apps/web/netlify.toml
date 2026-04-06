@@ -16,3 +16,7 @@
   SECRETS_SCAN_OMIT_KEYS = "NEXTAUTH_URL,TERMII_SENDER_ID,NEXT_PUBLIC_TURNSTILE_SITE_KEY,NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY, NEXT_PUBLIC_CONTACT_COMPANY, NEXT_PUBLIC_CONTACT_ADDRESS, NEXT_PUBLIC_CONTACT_PHONE, NEXT_PUBLIC_WHATSAPP_NUMBER, NEXT_PUBLIC_CONTACT_EMAIL, MAILER_SMTP_USER"
   # Set in Netlify UI (Site → Environment variables), not in this file: DATABASE_URL, AUTH_SECRET,
   # NEXTAUTH_URL (https://kynjo.homes), and any SMTP/OAuth keys your routes use.
+  #
+  # DATABASE_URL: use your hosted Postgres URL (e.g. Railway). Scope must include Functions (or "All
+  # scopes") — "Builds only" leaves API routes / Prisma without a URL at runtime. Redeploy after
+  # adding or changing secrets.

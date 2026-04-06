@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Prisma must not be bundled into server chunks as a single static client — breaks Netlify/serverless
+  // when DATABASE_URL is only available at runtime.
+  serverExternalPackages: ["@prisma/client", "prisma", "@estateiq/database"],
   async headers() {
     return [
       {
