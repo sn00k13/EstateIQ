@@ -1,6 +1,8 @@
 'use client'
 import { useState } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
+import logoIcon from '@/components/images/LogoIcon.png'
 import { Loader2, CheckCircle2, ArrowLeft } from 'lucide-react'
 import { fetchJson } from '@/lib/fetchJson'
 
@@ -38,12 +40,15 @@ export default function ForgotPasswordPage() {
 
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 bg-green-600 rounded-2xl mb-4">
-            <svg width="24" height="24" viewBox="0 0 56 56" fill="none">
-              <path d="M28 4L50 17V39L28 52L6 39V17L28 4Z"
-                fill="none" stroke="#fff" strokeWidth="4" strokeLinejoin="round"/>
-              <circle cx="28" cy="28" r="7" fill="#fff"/>
-            </svg>
+          <div className="flex justify-center mb-4">
+            <Image
+              src={logoIcon}
+              alt="Kynjo.Homes"
+              width={56}
+              height={56}
+              className="h-14 w-14 object-contain"
+              priority
+            />
           </div>
           <h1 className="text-2xl font-semibold text-gray-900">Reset your password</h1>
           <p className="text-gray-500 text-sm mt-1">

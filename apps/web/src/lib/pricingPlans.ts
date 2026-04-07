@@ -67,6 +67,9 @@ export const pricingPlans: PricingPlan[] = [
     cta: 'Contact sales',
     features: [
       { label: 'Everything in Professional', included: true },
+      { label: 'Surveillance Cameras with live feed', included: true },
+      { label: 'Facial Recognition Systems', included: true },
+      { label: 'AI Integration', included: true },
       { label: 'Multiple estates', included: true },
       { label: 'Custom integrations', included: true },
       { label: 'Dedicated account manager', included: true },

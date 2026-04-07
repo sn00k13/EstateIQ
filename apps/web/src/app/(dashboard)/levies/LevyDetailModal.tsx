@@ -1,10 +1,11 @@
 'use client'
-import { useEffect, useState } from 'react'
-import { X, CheckCircle2, Clock, Loader2, ExternalLink, ShieldCheck } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { X, CheckCircle2, Clock, Loader2, ExternalLink, ShieldCheck, Search, FileText } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { fetchJson } from '@/lib/fetchJson'
 import { useResident } from '@/context/ResidentContext'
 import LevyPayModal from './LevyPayModal'
+import LevyPaymentDetailModal from './LevyPaymentDetailModal'
 
 interface PaymentRow {
   id: string
@@ -37,6 +38,27 @@ interface Props {
   onClose: () => void
 }
 
+function matchesPaymentSearch(p: PaymentRow, q: string) {
+  if (!q.trim()) return true
+  const s = q.trim().toLowerCase()
+  const unit = `${p.unit.block ?? ''} ${p.unit.number}`.toLowerCase()
+  const name = `${p.resident.firstName} ${p.resident.lastName}`.toLowerCase()
+  const email = p.resident.email.toLowerCase()
+  const status =
+    p.status === 'PAID'
+      ? 'paid'
+      : p.receiptUrl
+        ? 'pending approval receipt'
+        : 'pending'
+  return (
+    unit.includes(s) ||
+    name.includes(s) ||
+    email.includes(s) ||
+    status.includes(s) ||
+    (p.reference?.toLowerCase().includes(s) ?? false)
+  )
+}
+
 export default function LevyDetailModal({ levy, onClose }: Props) {
   const { profile, isAdmin } = useResident()
   const [detail, setDetail]     = useState<LevyDetail | null>(null)
@@ -44,6 +66,8 @@ export default function LevyDetailModal({ levy, onClose }: Props) {
   const [approving, setApproving] = useState<string | null>(null)
   const [payModalPaymentId, setPayModalPaymentId] = useState<string | null>(null)
   const [filter, setFilter]     = useState<'ALL' | 'PAID' | 'PENDING'>('ALL')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [detailPaymentId, setDetailPaymentId] = useState<string | null>(null)
 
   async function loadDetail() {
     const { data } = await fetchJson<LevyDetail>(`/api/levies/${levy.id}`)
@@ -77,7 +101,8 @@ export default function LevyDetailModal({ levy, onClose }: Props) {
     const { error } = await fetchJson(`/api/payments/${paymentId}/approve`, { method: 'PATCH' })
     setApproving(null)
     if (error) { alert(error); return }
-    loadDetail()
+    await loadDetail()
+    setDetailPaymentId(null)
   }
 
   function fmt(n: number) {
@@ -90,6 +115,11 @@ export default function LevyDetailModal({ levy, onClose }: Props) {
     filter === 'PAID'   ? payments.filter(p => p.status === 'PAID') :
                           payments.filter(p => p.status === 'PENDING')
 
+  const searchFiltered = useMemo(
+    () => filtered.filter(p => matchesPaymentSearch(p, searchQuery)),
+    [filtered, searchQuery]
+  )
+
   const paid    = payments.filter(p => p.status === 'PAID').length
   const pending = payments.filter(p => p.status === 'PENDING').length
   const paidPercent = payments.length > 0 ? Math.round((paid / payments.length) * 100) : 0
@@ -100,6 +130,10 @@ export default function LevyDetailModal({ levy, onClose }: Props) {
 
   const payModalRow = payModalPaymentId
     ? payments.find(p => p.id === payModalPaymentId)
+    : null
+
+  const detailPayment = detailPaymentId
+    ? payments.find(p => p.id === detailPaymentId)
     : null
 
   return (
@@ -188,47 +222,80 @@ export default function LevyDetailModal({ levy, onClose }: Props) {
               )}
             </div>
 
-            {/* Filter tabs — estate admins only */}
+            {/* Search + filter tabs — estate admins */}
             {isAdmin && (
-              <div className="px-6 py-3 border-b border-gray-100 flex gap-2 shrink-0">
-                {(['ALL', 'PAID', 'PENDING'] as const).map(f => (
-                  <button
-                    key={f}
-                    onClick={() => setFilter(f)}
-                    className={cn(
-                      'px-3 py-1 rounded-full text-xs font-medium transition-colors',
-                      filter === f
-                        ? 'bg-gray-900 text-white'
-                        : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                    )}
-                  >
-                    {f === 'ALL' ? `All (${payments.length})` :
-                     f === 'PAID' ? `Paid (${paid})` : `Pending (${pending})`}
-                  </button>
-                ))}
+              <div className="px-6 py-3 border-b border-gray-100 shrink-0 space-y-3">
+                <div className="relative">
+                  <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="search"
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    placeholder="Search unit, name, email, status, reference…"
+                    className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-200 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-400"
+                  />
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  {(['ALL', 'PAID', 'PENDING'] as const).map(f => (
+                    <button
+                      key={f}
+                      type="button"
+                      onClick={() => setFilter(f)}
+                      className={cn(
+                        'px-3 py-1 rounded-full text-xs font-medium transition-colors',
+                        filter === f
+                          ? 'bg-gray-900 text-white'
+                          : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                      )}
+                    >
+                      {f === 'ALL' ? `All (${payments.length})` :
+                       f === 'PAID' ? `Paid (${paid})` : `Pending (${pending})`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Search only (resident — no status tabs) */}
+            {!isAdmin && payments.length > 0 && (
+              <div className="px-6 py-3 border-b border-gray-100 shrink-0">
+                <div className="relative">
+                  <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="search"
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    placeholder="Search unit, status…"
+                    className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-200 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+                  />
+                </div>
               </div>
             )}
 
             {/* Payment rows */}
             <div className="flex-1 overflow-y-auto min-h-0">
-              {filtered.length === 0 ? (
-                <div className="py-12 text-center text-gray-400 text-sm">
-                  {isAdmin ? `No ${filter.toLowerCase()} payments.` : 'No payment assigned to you for this levy.'}
+              {searchFiltered.length === 0 ? (
+                <div className="py-12 text-center text-gray-400 text-sm px-4">
+                  {filtered.length === 0
+                    ? isAdmin
+                      ? `No ${filter.toLowerCase()} payments.`
+                      : 'No payment assigned to you for this levy.'
+                    : 'No payments match your search.'}
                 </div>
               ) : (
                 <table className="w-full text-sm">
                   <thead className="sticky top-0 bg-gray-50">
                     <tr className="border-b border-gray-100">
                       {(showResidentTable
-                        ? ['Unit', 'Resident', 'Status', 'Paid on', 'Action']
-                        : ['Unit', 'Status', 'Paid on', 'Action']
+                        ? ['Unit', 'Resident', 'Status', 'Paid on', 'Details', 'Action']
+                        : ['Unit', 'Status', 'Paid on', 'Details', 'Action']
                       ).map(h => (
                         <th key={h} className="text-left px-4 py-3 text-xs font-medium text-gray-500">{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {filtered.map(p => {
+                    {searchFiltered.map(p => {
                       const isMine = profile?.id === p.resident.id
                       const pendingApproval = p.status === 'PENDING' && p.receiptUrl
                       return (
@@ -265,6 +332,16 @@ export default function LevyDetailModal({ levy, onClose }: Props) {
                               : '—'}
                           </td>
                           <td className="px-4 py-3">
+                            <button
+                              type="button"
+                              onClick={() => setDetailPaymentId(p.id)}
+                              className="inline-flex items-center gap-1 text-xs text-brand-600 hover:text-brand-700 font-medium"
+                            >
+                              <FileText size={12} />
+                              View
+                            </button>
+                          </td>
+                          <td className="px-4 py-3">
                             {p.status === 'PENDING' && isMine && !p.receiptUrl && (
                               <button
                                 onClick={() => setPayModalPaymentId(p.id)}
@@ -297,7 +374,7 @@ export default function LevyDetailModal({ levy, onClose }: Props) {
                                   ) : (
                                     <ShieldCheck size={11} />
                                   )}
-                                  Approve payment
+                                  Approve
                                 </button>
                               </div>
                             )}
@@ -329,6 +406,26 @@ export default function LevyDetailModal({ levy, onClose }: Props) {
           onPaystack={() => {
             void handlePaystack(payModalPaymentId)
           }}
+        />
+      )}
+
+      {detailPayment && detail && (
+        <LevyPaymentDetailModal
+          payment={detailPayment}
+          levyTitle={detail.title}
+          levyAmount={levy.amount}
+          levyDueDate={detail.dueDate}
+          estateName={detail.estate.name}
+          isAdmin={!!isAdmin}
+          isMine={profile?.id === detailPayment.resident.id}
+          approving={approving === detailPayment.id}
+          onClose={() => setDetailPaymentId(null)}
+          onPayNow={() => {
+            setDetailPaymentId(null)
+            setPayModalPaymentId(detailPayment.id)
+          }}
+          onPaystack={() => void handlePaystack(detailPayment.id)}
+          onApprove={() => void handleApprove(detailPayment.id)}
         />
       )}
     </div>
