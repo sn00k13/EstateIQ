@@ -16,6 +16,8 @@ export type LoginFail = {
   error: string
   /** Set when login-debug asks for Turnstile diagnostics */
   turnstileErrorCodes?: string[]
+  /** login-debug only: exception from DB, Turnstile fetch, etc. */
+  debugCatchDetail?: string
 }
 
 export type AuthenticateOptions = {
@@ -23,6 +25,8 @@ export type AuthenticateOptions = {
   remoteip?: string
   /** Include Cloudflare `error-codes` on Turnstile failure (login-debug only) */
   debugTurnstile?: boolean
+  /** Include `debugCatchDetail` on thrown errors (login-debug only; never for normal login) */
+  debugAuth?: boolean
 }
 
 /**
@@ -85,7 +89,12 @@ export async function authenticateCredentials(
     }
   } catch (err) {
     logger.error('[authenticateCredentials]', err)
-    return { error: 'Unable to sign in. Please try again.' }
+    const base: LoginFail = { error: 'Unable to sign in. Please try again.' }
+    if (options?.debugAuth) {
+      base.debugCatchDetail =
+        err instanceof Error ? err.message : String(err)
+    }
+    return base
   }
 }
 

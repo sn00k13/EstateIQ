@@ -7,6 +7,7 @@ import {
 } from '@/lib/credentials-login'
 import { getClientIpFromRequest } from '@/lib/get-client-ip'
 import { isLoginTestAllowed } from '@/lib/login-test-allowed'
+import { isTurnstileEnforced } from '@/lib/turnstile'
 
 type Step = { step: string; ok: boolean; detail?: string }
 
@@ -45,6 +46,21 @@ export async function POST(req: Request) {
     const email = body.email ?? ''
     const password = body.password ?? ''
     const turnstileToken = body.turnstileToken?.trim()
+    const enforced = isTurnstileEnforced()
+    push(
+      'Turnstile enforced (TURNSTILE_SECRET_KEY + NEXT_PUBLIC_TURNSTILE_SITE_KEY)',
+      enforced,
+      enforced
+        ? 'Both set — widget token is required and must match the secret’s site in Cloudflare'
+        : 'Not enforced — omit secret or public key for local dev'
+    )
+    push(
+      'Turnstile token in request',
+      Boolean(turnstileToken?.length),
+      turnstileToken
+        ? `${turnstileToken.length} chars (typical ~200+; if 0 or very short, paste/widget failed)`
+        : 'missing — complete the widget on the same page origin, then submit immediately'
+    )
 
     const remoteip = getClientIpFromRequest(req)
     push(
@@ -57,14 +73,16 @@ export async function POST(req: Request) {
       email,
       password,
       turnstileToken || undefined,
-      { remoteip, debugTurnstile: true }
+      { remoteip, debugTurnstile: true, debugAuth: true }
     )
 
     if ('error' in auth) {
       const detail =
-        auth.turnstileErrorCodes?.length
-          ? `${auth.error} Cloudflare: ${auth.turnstileErrorCodes.join(', ')}`
-          : auth.error
+        auth.debugCatchDetail
+          ? `${auth.error} Underlying: ${auth.debugCatchDetail}`
+          : auth.turnstileErrorCodes?.length
+            ? `${auth.error} Cloudflare: ${auth.turnstileErrorCodes.join(', ')}`
+            : auth.error
       push('authenticateCredentials (DB + bcrypt + Turnstile)', false, detail)
       return NextResponse.json({ ok: false, steps })
     }
