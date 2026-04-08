@@ -2,16 +2,18 @@
 
 import { signIn } from '@/lib/auth'
 import { CredentialsSignin } from 'next-auth'
+import { unstable_rethrow } from 'next/navigation'
+import { logger } from '@/lib/logger'
 
 export type LoginState = { error: string } | null
 
-function isNextRedirect(e: unknown): boolean {
+function isCredentialsSignin(e: unknown): boolean {
+  if (e instanceof CredentialsSignin) return true
   return (
     typeof e === 'object' &&
     e !== null &&
-    'digest' in e &&
-    typeof (e as { digest: unknown }).digest === 'string' &&
-    (e as { digest: string }).digest.startsWith('NEXT_REDIRECT')
+    'type' in e &&
+    (e as { type: string }).type === 'CredentialsSignin'
   )
 }
 
@@ -39,12 +41,13 @@ export async function loginAction(
       redirectTo: '/dashboard',
     })
   } catch (error) {
-    if (isNextRedirect(error)) throw error
-    // Only wrong credentials / failed authorize(). Other AuthErrors (e.g. misconfig) must surface.
-    if (error instanceof CredentialsSignin) {
+    // Successful signIn calls redirect() which throws — must rethrow so Next.js completes the redirect.
+    unstable_rethrow(error)
+    if (isCredentialsSignin(error)) {
       return { error: 'Invalid email or password' }
     }
-    throw error
+    logger.error('[loginAction] signIn failed', error)
+    return { error: 'Unable to sign in. Please try again.' }
   }
 
   return null
