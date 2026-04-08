@@ -6,6 +6,7 @@ import { getAuthSecretKey, WEB_SESSION_COOKIE } from '@/lib/auth-cookie'
 const publicPaths = [
   '/',
   '/sign-in',
+  '/login-test',
   '/sign-up',
   '/api/auth',
   '/api/webhooks',

@@ -16,6 +16,7 @@
   SECRETS_SCAN_OMIT_KEYS = "NEXTAUTH_URL,AUTH_URL,TERMII_SENDER_ID,NEXT_PUBLIC_TURNSTILE_SITE_KEY,NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY, NEXT_PUBLIC_CONTACT_COMPANY, NEXT_PUBLIC_CONTACT_ADDRESS, NEXT_PUBLIC_CONTACT_PHONE, NEXT_PUBLIC_WHATSAPP_NUMBER, NEXT_PUBLIC_CONTACT_EMAIL, MAILER_SMTP_USER, NEXT_PUBLIC_FACEBOOK_SITE, NEXT_PUBLIC_TWITTER_SITE, NEXT_PUBLIC_INSTAGRAM_SITE, NEXT_PUBLIC_LINKEDIN_SITE, CLOUDINARY_CLOUD_NAME"
   # Set in Netlify UI (Site → Environment variables), not in this file: DATABASE_URL, AUTH_SECRET,
   # NEXTAUTH_URL and AUTH_URL (Auth.js v5): same exact origin as the live site (e.g. https://www.kynjo.homes).
+  # Optional: ENABLE_LOGIN_TEST=true enables /login-test + POST /api/auth/login-debug (remove after debugging).
   # Turnstile: set BOTH TURNSTILE_SECRET_KEY and NEXT_PUBLIC_TURNSTILE_SITE_KEY (build embeds the public key).
   # Secret-only breaks sign-in: server rejects logins, widget never appears.
   # Mismatch breaks sign-in cookies / CSRF. Prefer one canonical host + redirect the other in Netlify/DNS.
