@@ -21,6 +21,19 @@ export async function GET(
       return NextResponse.json({ error: 'Not found' }, { status: 404 })
     }
 
+    const vehicle = await prisma.vehicle.findFirst({
+      where: { id, estateId: resident.estateId },
+      select: { residentId: true },
+    })
+    if (!vehicle) {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    }
+
+    const isEstateAdmin = ['ADMIN', 'SUPER_ADMIN'].includes(resident.role)
+    if (!isEstateAdmin && vehicle.residentId !== resident.id) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
     const logs = await prisma.scanLog.findMany({
       where: { vehicleId: id, estateId: resident.estateId },
       orderBy: { scannedAt: 'desc' },

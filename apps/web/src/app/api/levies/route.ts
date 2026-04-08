@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getAuthUserId } from '@/lib/auth-request'
 import { prisma } from '@estateiq/database'
 import { logger } from '@/lib/logger'
+import { viewerPaymentsWhere } from '@/lib/viewerPaymentsWhere'
 
 export async function GET() {
   try {
@@ -53,13 +54,7 @@ export async function GET() {
     })
 
     const viewerPayments = await prisma.payment.findMany({
-      where: {
-        levy: { estateId: resident.estateId },
-        OR: [
-          { residentId: resident.id },
-          ...(resident.unitId ? [{ unitId: resident.unitId }] : []),
-        ],
-      },
+      where: viewerPaymentsWhere(resident.estateId, resident),
       select: { levyId: true, status: true, amount: true },
     })
 

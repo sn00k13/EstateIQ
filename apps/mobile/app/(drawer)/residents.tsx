@@ -232,7 +232,7 @@ export default function ResidentsScreen() {
             <EmptyState
               icon="people-outline"
               title="No residents"
-              subtitle="Add residents to your estate or invite them by email."
+              subtitle="Add members to your estate or invite them by email."
             />
           )
         }
@@ -313,7 +313,7 @@ export default function ResidentsScreen() {
         >
           <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{editing ? 'Edit resident' : 'Add resident'}</Text>
+              <Text style={styles.modalTitle}>{editing ? 'Edit member' : 'Add member'}</Text>
               <TouchableOpacity onPress={closeModal} hitSlop={12}>
                 <Ionicons name="close" size={24} color={colors.gray[500]} />
               </TouchableOpacity>
@@ -380,7 +380,7 @@ export default function ResidentsScreen() {
                 {saveMutation.isPending ? (
                   <ActivityIndicator color={colors.white} />
                 ) : (
-                  <Text style={styles.saveBtnText}>{editing ? 'Save changes' : 'Add resident'}</Text>
+                  <Text style={styles.saveBtnText}>{editing ? 'Save changes' : 'Add member'}</Text>
                 )}
               </TouchableOpacity>
             </ScrollView>

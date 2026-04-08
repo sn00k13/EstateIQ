@@ -60,7 +60,7 @@ export default function DashboardClient() {
   // ── Stat cards ─────────────────────────────────────────────────────
   const adminStatCards = [
     {
-      label: 'Total residents',
+      label: 'Total members',
       value: stats?.totalResidents ?? 0,
       sub:   `${stats?.activeResidents ?? 0} active`,
       icon:  Users,
@@ -112,7 +112,7 @@ export default function DashboardClient() {
       color: 'bg-amber-50 text-amber-600',
     },
     {
-      label: 'Total residents',
+      label: 'Total members',
       value: stats?.totalResidents ?? 0,
       sub:   `${stats?.activeResidents ?? 0} active`,
       icon:  Users,
@@ -138,7 +138,7 @@ export default function DashboardClient() {
     {
       label: 'Outstanding dues',
       value: fmt(stats?.totalOutstanding ?? 0),
-      sub:   'Estate total',
+      sub:   'Your pending payments',
       icon:  CreditCard,
       color: 'bg-red-50 text-red-600',
     },
@@ -157,7 +157,7 @@ export default function DashboardClient() {
 
   // ── Quick actions ───────────────────────────────────────────────────
   const adminQuickActions = [
-    { label: 'Add resident',      href: '/residents',     icon: Users       },
+    { label: 'Add member',        href: '/residents',     icon: Users       },
     { label: 'Create levy',       href: '/levies',        icon: CreditCard  },
     { label: 'New announcement',  href: '/announcements', icon: Bell        },
     { label: 'View maintenance',  href: '/maintenance',   icon: Wrench      },

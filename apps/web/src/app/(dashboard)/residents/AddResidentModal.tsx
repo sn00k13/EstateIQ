@@ -84,7 +84,7 @@ export default function AddResidentModal({ onClose, onSuccess }: Props) {
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
 
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white z-10">
-          <h2 className="font-semibold text-gray-900">Add resident</h2>
+          <h2 className="font-semibold text-gray-900">Add member</h2>
           <button onClick={onClose} className="p-1 rounded hover:bg-gray-100 text-gray-400">
             <X size={16} />
           </button>
@@ -240,7 +240,7 @@ export default function AddResidentModal({ onClose, onSuccess }: Props) {
               type="submit" disabled={loading}
               className="flex-1 bg-brand-600 text-white rounded py-2.5 text-sm font-medium hover:bg-brand-700 disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              {loading ? <><Loader2 size={14} className="animate-spin" /> Adding...</> : 'Add resident'}
+              {loading ? <><Loader2 size={14} className="animate-spin" /> Adding...</> : 'Add member'}
             </button>
           </div>
         </form>

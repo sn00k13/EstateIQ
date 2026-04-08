@@ -80,7 +80,7 @@ export default function DashboardHomeScreen() {
     iconColor: string
   }[] = [
     {
-      label: 'Total residents',
+      label: 'Total members',
       value: stats?.totalResidents ?? 0,
       sub: `${stats?.activeResidents ?? 0} active`,
       icon: 'people-outline',
@@ -139,7 +139,7 @@ export default function DashboardHomeScreen() {
       iconColor: '#d97706',
     },
     {
-      label: 'Total residents',
+      label: 'Total members',
       value: stats?.totalResidents ?? 0,
       sub: `${stats?.activeResidents ?? 0} active`,
       icon: 'people-outline',
@@ -168,7 +168,7 @@ export default function DashboardHomeScreen() {
     {
       label: 'Outstanding dues',
       value: fmt(stats?.totalOutstanding ?? 0),
-      sub: 'Estate total',
+      sub: 'Your pending payments',
       icon: 'card-outline',
       iconBg: '#fef2f2',
       iconColor: '#dc2626',
@@ -190,7 +190,7 @@ export default function DashboardHomeScreen() {
       : residentStatCards
 
   const adminQuickActions: { label: string; href: string; icon: Ion }[] = [
-    { label: 'Add resident', href: '/(drawer)/residents', icon: 'people-outline' },
+    { label: 'Add member', href: '/(drawer)/residents', icon: 'people-outline' },
     { label: 'Create levy', href: '/(drawer)/levies', icon: 'card-outline' },
     { label: 'New announcement', href: '/(drawer)/announcements', icon: 'megaphone-outline' },
     { label: 'View maintenance', href: '/(drawer)/maintenance', icon: 'construct-outline' },

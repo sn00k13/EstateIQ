@@ -27,10 +27,21 @@ const ROLE_ICONS: Record<string, any> = {
   ADMIN: Shield, SECURITY: HardHat, RESIDENT: User, SUPER_ADMIN: Shield,
 }
 
+type RoleFilter = 'ALL' | 'RESIDENT' | 'ADMIN' | 'SUPER_ADMIN' | 'SECURITY'
+
+const ROLE_TABS: { id: RoleFilter; label: string }[] = [
+  { id: 'ALL',         label: 'All' },
+  { id: 'RESIDENT',    label: 'Residents' },
+  { id: 'SECURITY',    label: 'Security' },
+  { id: 'ADMIN',       label: 'Admin' },
+  { id: 'SUPER_ADMIN', label: 'Super admin' },
+]
+
 export default function ResidentsClient() {
   const [residents, setResidents]               = useState<Resident[]>([])
   const [filtered, setFiltered]                 = useState<Resident[]>([])
   const [search, setSearch]                     = useState('')
+  const [roleFilter, setRoleFilter]             = useState<RoleFilter>('ALL')
   const [loading, setLoading]                   = useState(true)
   const [showAddModal, setShowAddModal]         = useState(false)
   const [selectedResident, setSelectedResident] = useState<Resident | null>(null)
@@ -62,14 +73,17 @@ export default function ResidentsClient() {
 
   useEffect(() => {
     const q = search.toLowerCase()
-    setFiltered(
-      residents.filter(r =>
-        `${r.firstName} ${r.lastName} ${r.email} ${r.unit?.number ?? ''}`
-          .toLowerCase()
-          .includes(q)
-      )
+    let list =
+      roleFilter === 'ALL'
+        ? residents
+        : residents.filter(r => r.role === roleFilter)
+    list = list.filter(r =>
+      `${r.firstName} ${r.lastName} ${r.email} ${r.unit?.number ?? ''}`
+        .toLowerCase()
+        .includes(q)
     )
-  }, [search, residents])
+    setFiltered(list)
+  }, [search, residents, roleFilter])
 
   async function toggleActive(id: string, current: boolean) {
     await fetch(`/api/residents/${id}`, {
@@ -106,7 +120,7 @@ export default function ResidentsClient() {
       {/* Stats bar */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: 'Total residents', value: residents.length, color: 'text-gray-900' },
+          { label: 'Total members', value: residents.length, color: 'text-gray-900' },
           { label: 'Active',          value: active,           color: 'text-green-600' },
           { label: 'Inactive',        value: inactive,         color: 'text-red-500'   },
         ].map(({ label, value, color }) => (
@@ -133,8 +147,36 @@ export default function ResidentsClient() {
           onClick={() => setShowAddModal(true)}
           className="flex items-center gap-2 bg-brand-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-brand-700 transition-colors"
         >
-          <UserPlus size={15} /> Add resident
+          <UserPlus size={15} /> Add member
         </button>
+      </div>
+
+      {/* Role filter */}
+      <div className="flex flex-wrap items-center gap-2">
+        {ROLE_TABS.map(tab => {
+          const count =
+            tab.id === 'ALL'
+              ? residents.length
+              : residents.filter(r => r.role === tab.id).length
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setRoleFilter(tab.id)}
+              className={cn(
+                'px-3 py-1.5 rounded-full text-xs font-medium transition-colors border',
+                roleFilter === tab.id
+                  ? 'bg-gray-900 text-white border-gray-900'
+                  : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
+              )}
+            >
+              {tab.label}
+              <span className={cn('ml-1 tabular-nums', roleFilter === tab.id ? 'text-white/80' : 'text-gray-400')}>
+                ({count})
+              </span>
+            </button>
+          )
+        })}
       </div>
 
       {/* Table */}
@@ -161,9 +203,10 @@ export default function ResidentsClient() {
               <tr>
                 <td colSpan={6} className="text-center py-12 text-gray-400 text-sm">
                   {search
-                    ? 'No residents match your search.'
-                    : 'No residents yet. Add one to get started.'
-                  }
+                    ? 'No members match your search.'
+                    : roleFilter !== 'ALL'
+                      ? 'No members with this role.'
+                      : 'No residents yet. Add one to get started.'}
                 </td>
               </tr>
             )}
@@ -282,6 +325,7 @@ export default function ResidentsClient() {
 
       {selectedResident && (
         <ResidentDetailModal
+          key={selectedResident.id}
           resident={selectedResident}
           onClose={() => setSelectedResident(null)}
           onToggleActive={(id, current) => {

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getAuthUserId } from '@/lib/auth-request'
 import { prisma } from '@estateiq/database'
+import { viewerPaymentsWhere } from '@/lib/viewerPaymentsWhere'
 
 export async function GET() {
   try {
@@ -19,6 +20,7 @@ export async function GET() {
 
     const estateId = resident.estateId
     const isResidentOnly = resident.role === 'RESIDENT'
+    const isAdminRole = resident.role === 'ADMIN' || resident.role === 'SUPER_ADMIN'
     const maintenanceScope = isResidentOnly
       ? { estateId, submittedBy: resident.id }
       : { estateId }
@@ -83,12 +85,14 @@ export async function GET() {
           endsAt: { gt: new Date() },
         },
       }),
-      prisma.announcement.findMany({
-        where:   { estateId },
-        orderBy: { createdAt: 'desc' },
-        take:    3,
-        select:  { id: true, title: true, createdAt: true },
-      }),
+      isAdminRole
+        ? prisma.announcement.findMany({
+            where:   { estateId },
+            orderBy: { createdAt: 'desc' },
+            take:    3,
+            select:  { id: true, title: true, createdAt: true },
+          })
+        : Promise.resolve([] as { id: string; title: string; createdAt: Date }[]),
       prisma.maintenanceRequest.findMany({
         where:   maintenanceScope,
         orderBy: { createdAt: 'desc' },
@@ -103,23 +107,44 @@ export async function GET() {
       }),
     ])
 
-    const totalLevies      = levies.length
-    const paidPayments     = payments.filter(p => p.status === 'PAID')
-    const totalCollected   = paidPayments.reduce((s, p) => s + p.amount, 0)
-    // Expected dues = per-levy amount × active residents (not raw invoice rows).
-    const totalExpected    = levies.reduce((s, l) => s + l.amount * activeResidents, 0)
-    const totalOutstanding = totalExpected - totalCollected
-    const collectionRate   = totalExpected > 0
-      ? Math.round((totalCollected / totalExpected) * 100)
-      : 0
+    const residentPendingPayments = isResidentOnly
+      ? await prisma.payment.aggregate({
+          where: {
+            ...viewerPaymentsWhere(estateId, resident),
+            status: 'PENDING',
+          },
+          _sum: { amount: true },
+        })
+      : null
+
+    const totalLevies = levies.length
+    const paidPayments = payments.filter(p => p.status === 'PAID')
+    const totalCollected = paidPayments.reduce((s, p) => s + p.amount, 0)
+    const totalExpected = levies.reduce((s, l) => s + l.amount * totalUnits, 0)
+
+    let totalOutstanding: number
+    let collectionRate: number
+
+    if (isResidentOnly && residentPendingPayments) {
+      totalOutstanding = residentPendingPayments._sum.amount ?? 0
+      collectionRate = 0
+    } else {
+      totalOutstanding = totalExpected - totalCollected
+      collectionRate =
+        totalExpected > 0 ? Math.round((totalCollected / totalExpected) * 100) : 0
+    }
+
+    const announcementItems = isAdminRole
+      ? recentAnnouncements.map(a => ({
+          id:        a.id,
+          type:      'announcement',
+          message:   `New announcement: ${a.title}`,
+          createdAt: a.createdAt.toISOString(),
+        }))
+      : []
 
     const recentActivity = [
-      ...recentAnnouncements.map(a => ({
-        id:        a.id,
-        type:      'announcement',
-        message:   `New announcement: ${a.title}`,
-        createdAt: a.createdAt.toISOString(),
-      })),
+      ...announcementItems,
       ...recentMaintenance.map(m => ({
         id:        m.id,
         type:      'maintenance',

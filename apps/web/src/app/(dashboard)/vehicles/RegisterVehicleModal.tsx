@@ -17,7 +17,10 @@ export default function RegisterVehicleModal({ onClose, onSuccess }: Props) {
   })
 
   useEffect(() => {
-    fetchJson<Resident[]>('/api/residents').then(({ data }) => setResidents(data ?? []))
+    fetchJson<Resident[] | { data: Resident[] }>('/api/residents?limit=100').then(({ data }) => {
+      const list = Array.isArray(data) ? data : (data?.data ?? [])
+      setResidents(list)
+    })
   }, [])
 
   function set(key: keyof typeof form) {

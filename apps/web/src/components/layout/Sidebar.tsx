@@ -32,7 +32,7 @@ const navItems: NavItem[] = [
     roles: ['ADMIN', 'SUPER_ADMIN', 'SECURITY', 'RESIDENT'],
   },
   {
-    label: 'Residents',
+    label: 'Members',
     href:  '/residents',
     icon:  Users,
     roles: ['ADMIN', 'SUPER_ADMIN'],
@@ -83,7 +83,7 @@ const navItems: NavItem[] = [
     label: 'Vehicles',
     href:  '/vehicles',
     icon:  Car,
-    roles: ['ADMIN', 'SUPER_ADMIN', 'SECURITY'],
+    roles: ['ADMIN', 'SUPER_ADMIN', 'SECURITY', 'RESIDENT'],
   },
   {
     label: 'Gate scanner',

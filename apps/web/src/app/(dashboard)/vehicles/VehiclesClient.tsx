@@ -59,11 +59,15 @@ export default function VehiclesClient() {
   useEffect(() => {
     const q = search.toLowerCase()
     setFiltered(
-      vehicles.filter(v =>
-        `${v.plateNumber} ${v.resident.firstName} ${v.resident.lastName} ${v.make ?? ''} ${v.model ?? ''}`.toLowerCase().includes(q)
-      )
+      vehicles.filter(v => {
+        const base = `${v.plateNumber} ${v.make ?? ''} ${v.model ?? ''}`
+        const withOwner = isAdmin
+          ? `${base} ${v.resident.firstName} ${v.resident.lastName}`
+          : base
+        return withOwner.toLowerCase().includes(q)
+      })
     )
-  }, [vehicles, search])
+  }, [vehicles, search, isAdmin])
 
   async function handleDeactivate(id: string) {
     if (!confirm('Deactivate this vehicle? Its sticker will stop working immediately.')) return
@@ -107,7 +111,7 @@ export default function VehiclesClient() {
           <Search size={14} className="text-gray-400 shrink-0" />
           <input
             type="text"
-            placeholder="Search by plate, resident or make..."
+            placeholder={isAdmin ? 'Search by plate, resident or make…' : 'Search by plate or make…'}
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="flex-1 text-sm focus:outline-none bg-transparent"
@@ -128,10 +132,10 @@ export default function VehiclesClient() {
         <div className="bg-white border border-gray-100 rounded-xl p-16 text-center">
           <Car size={36} className="text-gray-200 mx-auto mb-3" />
           <p className="text-gray-500 text-sm font-medium">No vehicles registered</p>
-          <p className="text-gray-400 text-xs mt-1">
+          <p className="text-gray-400 text-xs mt-1 max-w-sm mx-auto">
             {isAdmin
               ? 'Register a vehicle to generate a QR sticker.'
-              : 'No vehicles have been registered for your unit yet.'
+              : 'You have no vehicles registered yet. Ask your estate admin to register your vehicle and issue a gate sticker.'
             }
           </p>
         </div>
@@ -187,12 +191,14 @@ export default function VehiclesClient() {
                     <p className="text-sm text-gray-500 mt-0.5">
                       {[v.color, v.make, v.model].filter(Boolean).join(' · ') || 'No details'}
                     </p>
-                    <p className="text-xs text-gray-400 mt-1">
-                      Owner: {v.resident.firstName} {v.resident.lastName}
-                      {v.resident.unit && (
-                        ` — ${v.resident.unit.block ? v.resident.unit.block + ', ' : ''}${v.resident.unit.number}`
-                      )}
-                    </p>
+                    {isAdmin && (
+                      <p className="text-xs text-gray-400 mt-1">
+                        Owner: {v.resident.firstName} {v.resident.lastName}
+                        {v.resident.unit && (
+                          ` — ${v.resident.unit.block ? v.resident.unit.block + ', ' : ''}${v.resident.unit.number}`
+                        )}
+                      </p>
+                    )}
                   </div>
 
                   {/* Actions */}
