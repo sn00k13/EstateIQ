@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import logoIcon from '@/components/images/LogoIcon.png'
+import logoIcon from '@/components/images/LogoIcon.webp'
 import { Loader2, CheckCircle2, ArrowLeft } from 'lucide-react'
 import { fetchJson } from '@/lib/fetchJson'
 

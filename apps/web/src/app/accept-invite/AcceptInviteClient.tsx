@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { CheckCircle2, Loader2, Eye, EyeOff } from 'lucide-react'
 import { fetchJson } from '@/lib/fetchJson'
 import Link from 'next/link'
-import logo from '@/components/images/logo.png'
+import logo from '@/components/images/logo.webp'
 import type { TurnstileInstance } from '@marsidev/react-turnstile'
 import {
   TurnstileWidget,

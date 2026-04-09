@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils'
 import { fetchJson } from '@/lib/fetchJson'
 import SubscriptionGate from '@/components/SubscriptionGate'
 import MobileMenuButton from '@/components/layout/MobileMenuButton'
-import logo from '@/components/images/logo.png'
+import logo from '@/components/images/logo.webp'
 
 type Outcome = 'GRANTED' | 'WARNING' | 'BLOCKED'
 

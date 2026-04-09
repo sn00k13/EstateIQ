@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import logo from "@/components/images/logo.png";
+import logo from "@/components/images/logo.webp";
 import NewsletterForm from "@/components/NewsletterForm";
 import { footerSocialLinks } from "@/lib/socialLinks";
 

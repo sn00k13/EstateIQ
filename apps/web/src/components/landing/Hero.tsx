@@ -5,7 +5,7 @@ import Image from "next/image";
 import { ArrowRight, Building2, Users, ShieldCheck } from "lucide-react";
 import { useSession } from '@/components/layout/SessionProvider'
 import { Button } from "@/components/ui/button";
-import heroImage from "@/components/images/hero-estate.jpg";
+import heroImage from "@/components/images/hero-estate.webp";
 
 const stats = [
   { icon: Building2, value: "2,400+", label: "Estates managed" },

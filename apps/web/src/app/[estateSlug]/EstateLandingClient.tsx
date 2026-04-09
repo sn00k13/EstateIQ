@@ -7,7 +7,7 @@ import {
   CreditCard, Wrench, BarChart2, Car,
   ArrowRight, CheckCircle2,
 } from 'lucide-react'
-import logo from '@/components/images/logo.png'
+import logo from '@/components/images/logo.webp'
 
 const QUOTES = [
   { text: 'Alone we can do so little; together we can do so much.', author: 'Helen Keller' },

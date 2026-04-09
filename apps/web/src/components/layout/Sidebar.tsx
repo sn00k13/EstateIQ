@@ -3,7 +3,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import logo from '@/components/images/logo.png'
+import logo from '@/components/images/logo.webp'
 import {
   LayoutDashboard, Users, Megaphone, CreditCard,
   ShieldCheck, Wrench, CalendarCheck, BarChart2,

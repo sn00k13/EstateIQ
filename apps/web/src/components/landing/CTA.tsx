@@ -6,7 +6,7 @@ import { ArrowRight } from "lucide-react";
 import { useSession } from '@/components/layout/SessionProvider'
 import { Button } from "@/components/ui/button";
 import { useEffect, useRef, useState } from "react";
-import frontgate from "@/components/images/frontgate.png";
+import frontgate from "@/components/images/frontgate.webp";
 
 const CTA = () => {
   const { status } = useSession();

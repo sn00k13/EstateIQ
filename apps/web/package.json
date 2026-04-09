@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "optimize-images": "node scripts/optimize-images.mjs",
     "dev": "next dev",
     "dev:lan": "next dev --hostname 0.0.0.0 -p 3000",
     "build": "prisma generate --schema=../../packages/database/prisma/schema.prisma && next build",
@@ -34,11 +35,11 @@
     "postcss": "^8.5.8",
     "prisma": "^6.19.2",
     "qrcode": "^1.5.4",
-    "react-markdown": "^9.0.1",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
-    "remark-gfm": "^4.0.0",
+    "react-markdown": "^9.0.1",
     "react-qr-code": "^2.0.18",
+    "remark-gfm": "^4.0.0",
     "tailwind-merge": "^3.5.0",
     "tailwindcss": "^3.4.19",
     "tailwindcss-animate": "^1.0.7"
@@ -52,6 +53,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
+    "sharp": "^0.34.5",
     "typescript": "^5"
   }
 }

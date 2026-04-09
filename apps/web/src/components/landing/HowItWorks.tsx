@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Image from "next/image";
-import ipadFeature from "@/components/images/Ipad.png";
+import ipadFeature from "@/components/images/Ipad.webp";
 
 const steps = [
   {

@@ -10,7 +10,7 @@ import {
   Bell,
   Users,
 } from "lucide-react";
-import kynjousers from "@/components/images/kynjousers.png";
+import kynjousers from "@/components/images/kynjousers.webp";
 
 const features = [
   {

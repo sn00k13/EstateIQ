@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { BookOpen } from 'lucide-react'
-import logo from '@/components/images/logo.png'
+import logo from '@/components/images/logo.webp'
 import { ProductGuideMarkdown } from '@/components/help/ProductGuideMarkdown'
 import { loadProductGuideMarkdown } from '@/lib/loadProductGuide'
 

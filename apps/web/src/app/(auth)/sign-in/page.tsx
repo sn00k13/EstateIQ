@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
-import logo from '@/components/images/logo.png'
+import logo from '@/components/images/logo.webp'
 import Link from 'next/link'
 import { Loader2, Eye, EyeOff } from 'lucide-react'
 import type { TurnstileInstance } from '@marsidev/react-turnstile'
