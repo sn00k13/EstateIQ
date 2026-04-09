@@ -48,6 +48,7 @@ export const pricingPlans: PricingPlan[] = [
       { label: 'Unlimited members', included: true },
       { label: 'Unlimited units', included: true },
       { label: 'All Starter features', included: true },
+      { label: 'Resident ID Cards/Passes', included: true },
       { label: 'Levies & payments', included: true },
       { label: 'Polls & voting', included: true },
       { label: 'Vehicle QR system', included: true },

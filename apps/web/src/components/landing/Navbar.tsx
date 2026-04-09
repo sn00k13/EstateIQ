@@ -18,6 +18,7 @@ const Navbar = () => {
     { label: "How It Works", href: "#how-it-works" },
     { label: "Pricing", href: "#pricing" },
     { label: "FAQ", href: "#faq" },
+    { label: "Help", href: "/help" },
   ];
 
   return (
@@ -35,15 +36,25 @@ const Navbar = () => {
 
         {/* Desktop */}
         <div className="hidden md:flex items-center gap-8">
-          {links.map((l) => (
-            <a
-              key={l.href}
-              href={l.href}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200"
-            >
-              {l.label}
-            </a>
-          ))}
+          {links.map((l) =>
+            l.href.startsWith('/') ? (
+              <Link
+                key={l.href}
+                href={l.href}
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200"
+              >
+                {l.label}
+              </Link>
+            ) : (
+              <a
+                key={l.href}
+                href={l.href}
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200"
+              >
+                {l.label}
+              </a>
+            )
+          )}
         </div>
         <div className="hidden md:flex items-center gap-3">
           {isLoggedIn ? (
@@ -76,16 +87,27 @@ const Navbar = () => {
       {open && (
         <div className="md:hidden bg-card border-b border-border section-padding pb-6 animate-fade-in">
           <div className="flex flex-col gap-4 pt-2">
-            {links.map((l) => (
-              <a
-                key={l.href}
-                href={l.href}
-                className="text-sm text-muted-foreground hover:text-foreground"
-                onClick={() => setOpen(false)}
-              >
-                {l.label}
-              </a>
-            ))}
+            {links.map((l) =>
+              l.href.startsWith('/') ? (
+                <Link
+                  key={l.href}
+                  href={l.href}
+                  className="text-sm text-muted-foreground hover:text-foreground"
+                  onClick={() => setOpen(false)}
+                >
+                  {l.label}
+                </Link>
+              ) : (
+                <a
+                  key={l.href}
+                  href={l.href}
+                  className="text-sm text-muted-foreground hover:text-foreground"
+                  onClick={() => setOpen(false)}
+                >
+                  {l.label}
+                </a>
+              )
+            )}
             <div className="flex gap-3 pt-2">
               {isLoggedIn ? (
                 <Button size="sm" className="bg-primary hover:bg-primary-dark text-primary-foreground" asChild>

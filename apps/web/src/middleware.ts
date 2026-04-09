@@ -25,6 +25,7 @@ const publicPaths = [
   '/pricing',
   '/subscribe',
   '/api/subscription',
+  '/help',
 ]
 
 const dashboardRoutes = [
