@@ -74,8 +74,8 @@ export async function GET(req: Request) {
     // Log the scan
     await prisma.scanLog.create({
       data: {
-        vehicleId:  vehicle.id,
-        estateId:   vehicle.estateId,
+        vehicleId: vehicle.id,
+        estateId:  vehicle.estateId,
         outcome,
         debtAmount,
         location,

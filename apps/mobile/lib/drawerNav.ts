@@ -24,7 +24,7 @@ export const DRAWER_NAV_ITEMS: DrawerNavItem[] = [
   { label: 'Polls', name: 'polls', icon: 'bar-chart-outline', roles: ['ADMIN', 'SUPER_ADMIN', 'RESIDENT'] },
   { label: 'Incidents', name: 'incidents', icon: 'warning-outline', roles: ['ADMIN', 'SUPER_ADMIN', 'SECURITY', 'RESIDENT'] },
   { label: 'Vehicles', name: 'vehicles', icon: 'car-outline', roles: ['ADMIN', 'SUPER_ADMIN', 'SECURITY'] },
-  { label: 'Gate scanner', name: 'gate', icon: 'qr-code-outline', roles: ['ADMIN', 'SUPER_ADMIN', 'SECURITY'] },
+  { label: 'Scanner', name: 'gate', icon: 'qr-code-outline', roles: ['ADMIN', 'SUPER_ADMIN', 'SECURITY'] },
   { label: 'Subscription', name: 'subscription', icon: 'wallet-outline', roles: ['ADMIN', 'SUPER_ADMIN'] },
 ]
 

@@ -4,6 +4,7 @@ import { prisma } from '@estateiq/database'
 import { sendInviteEmail } from '@/lib/email'
 import crypto from 'crypto'
 import { getPaginationParams, paginate } from '@/lib/paginate'
+import { rowToCsvLine } from '@/lib/csv'
 import { logger } from '@/lib/logger'
 import { getPublicAppOrigin } from '@/lib/appUrl'
 import { assertCanAddResident } from '@/lib/estatePlanEnforcement'
@@ -24,8 +25,75 @@ export async function GET(req: Request) {
       return NextResponse.json([])
     }
 
-    const { page, limit } = getPaginationParams(req.url)
+    const { searchParams } = new URL(req.url)
     const where = { estateId: admin.estateId }
+    const isEstateAdmin = ['ADMIN', 'SUPER_ADMIN'].includes(admin.role)
+
+    if (searchParams.get('format') === 'csv') {
+      if (!isEstateAdmin) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+      const rows = await prisma.resident.findMany({
+        where,
+        include: { unit: true },
+        orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
+      })
+      const header = rowToCsvLine([
+        'First name',
+        'Last name',
+        'Email',
+        'Phone',
+        'Unit',
+        'Role',
+        'Status',
+        'Joined',
+      ])
+      const lines = rows.map((r) => {
+        const unit =
+          r.unit != null
+            ? `${r.unit.block ? `${r.unit.block}, ` : ''}${r.unit.number}`.trim()
+            : ''
+        return rowToCsvLine([
+          r.firstName,
+          r.lastName,
+          r.email,
+          r.phone ?? '',
+          unit,
+          r.role,
+          r.isActive ? 'Active' : 'Inactive',
+          new Date(r.joinedAt).toISOString().slice(0, 10),
+        ])
+      })
+      const csv = '\uFEFF' + [header, ...lines].join('\r\n')
+      const stamp = new Date().toISOString().slice(0, 10)
+      return new NextResponse(csv, {
+        headers: {
+          'Content-Type': 'text/csv; charset=utf-8',
+          'Content-Disposition': `attachment; filename="members-export-${stamp}.csv"`,
+        },
+      })
+    }
+
+    if (searchParams.get('all') === '1') {
+      if (!isEstateAdmin) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+      const residents = await prisma.resident.findMany({
+        where,
+        include: { unit: true },
+        orderBy: { joinedAt: 'desc' },
+      })
+      const total = residents.length
+      return NextResponse.json({
+        data:       residents,
+        total,
+        page:       1,
+        totalPages: 1,
+        hasMore:    false,
+      })
+    }
+
+    const { page, limit } = getPaginationParams(req.url)
 
     const [residents, total] = await Promise.all([
       prisma.resident.findMany({
@@ -36,7 +104,7 @@ export async function GET(req: Request) {
       }),
       prisma.resident.count({ where }),
     ])
-  
+
     return NextResponse.json({
       data:       residents,
       total,

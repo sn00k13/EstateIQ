@@ -2,16 +2,21 @@
 import { useEffect, useState } from 'react'
 import {
   X, Mail, Phone, Home, Shield, Calendar, User, HardHat,
-  CreditCard, Wrench, AlertTriangle, Car,
+  CreditCard, Wrench, AlertTriangle, Car, Printer, RefreshCw,
 } from 'lucide-react'
+import QRCodeReact from 'react-qr-code'
+import QRCodeLib from 'qrcode'
 import { cn } from '@/lib/utils'
 import { fetchJson } from '@/lib/fetchJson'
+import { useResident } from '@/context/ResidentContext'
 
 interface Unit { id: string; number: string; block: string | null }
 interface Resident {
   id: string; firstName: string; lastName: string
   email: string; phone: string | null; role: string
   isActive: boolean; joinedAt: string; unit: Unit | null
+  /** Gate scan token (ID card QR). */
+  residentScanToken: string
 }
 
 const ROLE_STYLES: Record<string, string> = {
@@ -111,6 +116,15 @@ interface Props {
   resident: Resident
   onClose: () => void
   onToggleActive: (id: string, current: boolean) => void
+  onResidentPatch?: (resident: Resident) => void
+}
+
+function escHtml(s: string) {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
 }
 
 function formatMoney(amount: number, currency: string) {
@@ -126,15 +140,27 @@ function formatMoney(amount: number, currency: string) {
   }
 }
 
-export default function ResidentDetailModal({ resident, onClose, onToggleActive }: Props) {
+export default function ResidentDetailModal({
+  resident,
+  onClose,
+  onToggleActive,
+  onResidentPatch,
+}: Props) {
+  const { profile, isAdmin } = useResident()
   const RoleIcon = ROLE_ICONS[resident.role] ?? User
   const initials = `${resident.firstName[0]}${resident.lastName[0]}`.toUpperCase()
   const [tab, setTab] = useState<TabId>('profile')
   const [historyLoading, setHistoryLoading] = useState(true)
   const [history, setHistory] = useState<ResidentHistory | null>(null)
   const [historyError, setHistoryError] = useState<string | null>(null)
+  const [qrOrigin, setQrOrigin] = useState('')
+  const [rotatingQr, setRotatingQr] = useState(false)
 
-  const details = [
+  useEffect(() => {
+    setQrOrigin(typeof window !== 'undefined' ? window.location.origin : '')
+  }, [])
+
+  const primaryDetails = [
     {
       icon: Mail,
       label: 'Email address',
@@ -154,14 +180,114 @@ export default function ResidentDetailModal({ resident, onClose, onToggleActive 
         : 'No unit assigned',
       muted: !resident.unit,
     },
-    {
-      icon: Calendar,
-      label: 'Member since',
-      value: new Date(resident.joinedAt).toLocaleDateString('en-NG', {
-        day: 'numeric', month: 'long', year: 'numeric',
-      }),
-    },
   ]
+
+  const memberSinceFormatted = new Date(resident.joinedAt).toLocaleDateString('en-NG', {
+    day: 'numeric', month: 'long', year: 'numeric',
+  })
+
+  const unitLine = resident.unit
+    ? `${resident.unit.block ? resident.unit.block + ', ' : ''}${resident.unit.number}`
+    : 'No unit assigned'
+
+  const estateName = profile?.estate?.name
+  const roleLabel =
+    resident.role.charAt(0) + resident.role.slice(1).toLowerCase().replace(/_/g, ' ')
+
+  const qrValue =
+    qrOrigin && resident.residentScanToken
+      ? `${qrOrigin}/api/scan/resident?token=${encodeURIComponent(resident.residentScanToken)}`
+      : ''
+
+  async function handleRotateResidentQr() {
+    if (!isAdmin || !onResidentPatch) return
+    setRotatingQr(true)
+    const { data, error } = await fetchJson<Resident>(
+      `/api/residents/${resident.id}/rotate-qr`,
+      { method: 'POST' }
+    )
+    setRotatingQr(false)
+    if (error) {
+      alert(error)
+      return
+    }
+    if (data) onResidentPatch(data)
+  }
+
+  async function openPrintIdCard() {
+    const fullName = `${resident.firstName} ${resident.lastName}`
+    let qrDataUrl = ''
+    if (qrValue) {
+      try {
+        qrDataUrl = await QRCodeLib.toDataURL(qrValue, { margin: 1, width: 120 })
+      } catch {
+        qrDataUrl = ''
+      }
+    }
+    const headerRight = escHtml(estateName ?? 'Estate member')
+    const qrBlock = qrDataUrl
+      ? `<div class="qr-wrap"><img src="${qrDataUrl}" alt="" width="120" height="120" class="qr-img"/></div>`
+      : ''
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>Resident ID — ${escHtml(fullName)}</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 24px; font-family: ui-sans-serif, system-ui, sans-serif; background: #fff; color: #111827; }
+    .card { max-width: 520px; margin: 0 auto; border-radius: 16px; overflow: hidden; border: 2px solid #e5e7eb; box-shadow: 0 10px 40px rgba(0,0,0,0.08); }
+    .head { background: linear-gradient(90deg, #059669, #047857); color: #fff; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
+    .head span:last-child { text-align: right; font-weight: 500; text-transform: none; letter-spacing: normal; opacity: 0.92; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 55%; }
+    .body { padding: 16px; display: flex; gap: 16px; align-items: flex-start; justify-content: space-between; }
+    .body-main { display: flex; gap: 16px; flex: 1; min-width: 0; align-items: flex-start; }
+    .qr-wrap { flex-shrink: 0; padding: 8px; background: #fff; border: 1px solid #f3f4f6; border-radius: 12px; }
+    .qr-img { display: block; }
+    .avatar { width: 72px; height: 72px; border-radius: 12px; background: #ecfdf5; color: #047857; border: 1px solid #d1fae5; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 700; flex-shrink: 0; }
+    .meta { flex: 1; min-width: 0; }
+    .name { font-size: 18px; font-weight: 700; line-height: 1.2; margin: 0 0 4px; word-break: break-word; }
+    .role { font-size: 12px; color: #6b7280; margin: 0 0 6px; }
+    .unit { font-size: 14px; color: #1f2937; margin: 0; }
+    .rid { font-size: 10px; color: #9ca3af; font-family: ui-monospace, monospace; margin: 8px 0 0; word-break: break-all; }
+    .foot { padding: 10px 16px; background: #f9fafb; border-top: 1px solid #f3f4f6; text-align: center; font-size: 11px; color: #6b7280; }
+    @media print { body { padding: 0; } .card { box-shadow: none; } }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="head"><span>Resident ID</span><span>${headerRight}</span></div>
+    <div class="body">
+      <div class="body-main">
+        <div class="avatar">${escHtml(initials)}</div>
+        <div class="meta">
+          <p class="name">${escHtml(fullName)}</p>
+          <p class="role">${escHtml(roleLabel)}</p>
+          <p class="unit">${escHtml(unitLine)}</p>
+          <p class="rid">ID: ${escHtml(resident.id)}</p>
+        </div>
+      </div>
+      ${qrBlock}
+    </div>
+    <div class="foot">Powered by Kynjo.Homes</div>
+  </div>
+</body>
+</html>`
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const w = window.open(url, '_blank', 'noopener,noreferrer')
+    if (!w) {
+      URL.revokeObjectURL(url)
+      return
+    }
+    w.focus()
+    setTimeout(() => {
+      w.print()
+      w.addEventListener('afterprint', () => {
+        URL.revokeObjectURL(url)
+        w.close()
+      })
+    }, 200)
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -255,7 +381,7 @@ export default function ResidentDetailModal({ resident, onClose, onToggleActive 
         <div className="flex-1 min-h-0 overflow-y-auto">
           {tab === 'profile' && (
             <div className="px-6 py-4 space-y-4">
-              {details.map(({ icon: Icon, label, value, muted }) => (
+              {primaryDetails.map(({ icon: Icon, label, value, muted }) => (
                 <div key={label} className="flex items-start gap-3">
                   <div className="w-8 h-8 rounded bg-gray-100 flex items-center justify-center shrink-0">
                     <Icon size={15} className="text-gray-500" />
@@ -268,6 +394,112 @@ export default function ResidentDetailModal({ resident, onClose, onToggleActive 
                   </div>
                 </div>
               ))}
+
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded bg-gray-100 flex items-center justify-center shrink-0">
+                  <Calendar size={15} className="text-gray-500" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400 mb-0.5">Member since</p>
+                  <p className="text-sm font-medium text-gray-900">{memberSinceFormatted}</p>
+                </div>
+              </div>
+
+              {/* ID card — printable */}
+              <div className="pt-2">
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">
+                  Resident ID card
+                </p>
+                <div
+                  className={cn(
+                    'rounded-2xl overflow-hidden border-2 border-gray-200 bg-white shadow-lg',
+                    'max-w-lg mx-auto print:shadow-none print:border-gray-300'
+                  )}
+                >
+                  <div className="bg-gradient-to-r from-brand-600 to-brand-700 px-4 py-3 flex items-center justify-between gap-2">
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-white/95">
+                      Resident ID
+                    </span>
+                    <span className="text-[11px] text-white/85 truncate max-w-[55%] text-right">
+                      {estateName ?? 'Estate member'}
+                    </span>
+                  </div>
+                  <div className="p-4 flex gap-3 items-stretch justify-between">
+                    <div className="flex gap-4 flex-1 min-w-0">
+                      <div
+                        className={cn(
+                          'w-[4.5rem] h-[4.5rem] rounded-xl shrink-0 flex items-center justify-center',
+                          'text-xl font-bold bg-brand-50 text-brand-700 border border-brand-100'
+                        )}
+                      >
+                        {initials}
+                      </div>
+                      <div className="flex-1 min-w-0 space-y-1">
+                        <p className="text-lg font-bold text-gray-900 leading-tight truncate">
+                          {resident.firstName} {resident.lastName}
+                        </p>
+                        <p className="text-xs text-gray-500">{roleLabel}</p>
+                        <p className="text-sm text-gray-800 pt-0.5">{unitLine}</p>
+                        <p className="text-[10px] text-gray-400 font-mono pt-1 break-all">
+                          ID: {resident.id}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="shrink-0 p-2 bg-white border border-gray-100 rounded-xl self-center">
+                      {qrValue ? (
+                        <QRCodeReact value={qrValue} size={88} level="M" />
+                      ) : (
+                        <div className="flex h-[88px] w-[88px] items-center justify-center px-1 text-center text-[10px] text-gray-400">
+                          QR unavailable
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="space-y-2 px-4 py-2.5 bg-gray-50 border-t border-gray-100">
+                    {qrValue && (
+                      <p className="print:hidden text-center text-[10px] font-mono leading-snug text-gray-500 break-all">
+                        {qrValue}
+                      </p>
+                    )}
+                    <p className="text-center text-[11px] text-gray-500">
+                      Powered by Kynjo.Homes
+                    </p>
+                  </div>
+                </div>
+
+                {isAdmin && (
+                  <div className="print:hidden mt-4 flex flex-col gap-2">
+                    <button
+                      type="button"
+                      onClick={() => void openPrintIdCard()}
+                      className={cn(
+                        'w-full flex items-center justify-center gap-2',
+                        'rounded-lg border border-gray-200 bg-white py-2.5 text-sm font-medium',
+                        'text-gray-700 hover:bg-gray-50 transition-colors'
+                      )}
+                    >
+                      <Printer size={16} className="text-gray-500" />
+                      Print ID card
+                    </button>
+                    {onResidentPatch && (
+                      <button
+                        type="button"
+                        onClick={() => void handleRotateResidentQr()}
+                        disabled={rotatingQr}
+                        className={cn(
+                          'w-full flex items-center justify-center gap-2',
+                          'rounded-lg border border-amber-200 bg-amber-50 py-2.5 text-sm font-medium',
+                          'text-amber-900 hover:bg-amber-100 transition-colors disabled:opacity-50'
+                        )}
+                        title="Invalidates current ID card QR; print a new card"
+                      >
+                        <RefreshCw size={16} className={cn(rotatingQr && 'animate-spin')} />
+                        {rotatingQr ? 'Rotating…' : 'Rotate QR token'}
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           )}
 

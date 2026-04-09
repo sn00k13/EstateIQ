@@ -77,7 +77,7 @@ import {
   
     return (
       <View style={styles.root}>
-        <DashboardTopBar title="Gate scanner" />
+        <DashboardTopBar title="Scanner" />
         <ScrollView
           style={styles.container}
           keyboardShouldPersistTaps="handled"

@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from 'react'
 import {
   UserPlus, Search, MoreHorizontal,
   Shield, User, HardHat, CheckCircle, XCircle,
+  Download,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { fetchJson } from '@/lib/fetchJson'
@@ -14,6 +15,7 @@ interface Resident {
   id: string; firstName: string; lastName: string
   email: string; phone: string | null; role: string
   isActive: boolean; joinedAt: string; unit: Unit | null
+  residentScanToken: string
 }
 
 const ROLE_STYLES: Record<string, string> = {
@@ -47,11 +49,12 @@ export default function ResidentsClient() {
   const [selectedResident, setSelectedResident] = useState<Resident | null>(null)
   const [menuOpen, setMenuOpen]                 = useState<string | null>(null)
   const [inviting, setInviting]                 = useState<string | null>(null)
+  const [exporting, setExporting]               = useState(false)
   const menuRef                                 = useRef<HTMLDivElement>(null)
 
   async function load() {
     setLoading(true)
-    const res  = await fetch('/api/residents')
+    const res  = await fetch('/api/residents?all=1')
     const json = await res.json()
     const list = Array.isArray(json) ? json : (json?.data ?? [])
     setResidents(list)
@@ -93,6 +96,33 @@ export default function ResidentsClient() {
     })
     setMenuOpen(null)
     load()
+  }
+
+  async function exportCsv() {
+    setExporting(true)
+    try {
+      const res = await fetch('/api/residents?format=csv', { credentials: 'include' })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        alert(typeof err?.error === 'string' ? err.error : 'Export failed.')
+        return
+      }
+      const blob = await res.blob()
+      const disp = res.headers.get('Content-Disposition')
+      const m = disp?.match(/filename="([^"]+)"/)
+      const filename = m?.[1] ?? 'members-export.csv'
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = filename
+      a.rel = 'noopener'
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    } finally {
+      setExporting(false)
+    }
   }
 
   async function handleInvite(id: string) {
@@ -143,6 +173,15 @@ export default function ResidentsClient() {
             className="flex-1 text-sm focus:outline-none bg-transparent"
           />
         </div>
+        <button
+          type="button"
+          onClick={() => void exportCsv()}
+          disabled={loading || exporting || residents.length === 0}
+          className="flex items-center gap-2 border border-gray-200 bg-white text-gray-700 px-4 py-2 rounded text-sm font-medium hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:pointer-events-none"
+        >
+          <Download size={15} />
+          {exporting ? 'Exporting…' : 'Export CSV'}
+        </button>
         <button
           onClick={() => setShowAddModal(true)}
           className="flex items-center gap-2 bg-brand-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-brand-700 transition-colors"
@@ -332,6 +371,7 @@ export default function ResidentsClient() {
             toggleActive(id, current)
             setSelectedResident(null)
           }}
+          onResidentPatch={patched => setSelectedResident(patched)}
         />
       )}
     </div>

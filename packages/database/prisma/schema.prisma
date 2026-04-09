@@ -77,28 +77,32 @@ model Unit {
 }
 
 model Resident {
-  id        String   @id @default(cuid())
-  estateId  String
-  estate    Estate   @relation(fields: [estateId], references: [id])
-  userId    String   @unique
-  unitId    String?
-  unit      Unit?    @relation(fields: [unitId], references: [id])
-  role      Role     @default(RESIDENT)
-  firstName String
-  lastName  String
-  email     String
-  phone     String?
-  avatarUrl String?
-  isActive  Boolean  @default(true)
-  joinedAt  DateTime @default(now())
-  payments  Payment[]
-  visitors  Visitor[]
-  bookings  FacilityBooking[]
-  votes     Vote[]
-  vehicles  Vehicle[]
+  id                String   @id @default(cuid())
+  estateId          String
+  estate            Estate   @relation(fields: [estateId], references: [id])
+  userId            String   @unique
+  unitId            String?
+  unit              Unit?    @relation(fields: [unitId], references: [id])
+  role              Role     @default(RESIDENT)
+  firstName         String
+  lastName          String
+  email             String
+  phone             String?
+  avatarUrl         String?
+  isActive          Boolean  @default(true)
+  joinedAt          DateTime @default(now())
+  /// Rotatable token embedded in resident ID card QR (gate scan).
+  residentScanToken String   @unique @default(uuid())
+  payments          Payment[]
+  visitors          Visitor[]
+  bookings          FacilityBooking[]
+  votes             Vote[]
+  vehicles          Vehicle[]
+  scanLogs          ScanLog[]
   @@index([estateId])
   @@index([userId])
   @@index([estateId, isActive])
+  @@index([residentScanToken])
 }
 
 // ─── ANNOUNCEMENTS ────────────────────────────────────────
@@ -284,8 +288,10 @@ model Vehicle {
 
 model ScanLog {
   id          String      @id @default(cuid())
-  vehicleId   String
-  vehicle     Vehicle     @relation(fields: [vehicleId], references: [id])
+  vehicleId   String?
+  vehicle     Vehicle?    @relation(fields: [vehicleId], references: [id])
+  residentId  String?
+  resident    Resident?   @relation(fields: [residentId], references: [id])
   estateId    String
   estate      Estate      @relation(fields: [estateId], references: [id])
   outcome     ScanOutcome
@@ -294,6 +300,7 @@ model ScanLog {
   location    String?
   scannedBy   String?
   @@index([vehicleId])
+  @@index([residentId])
   @@index([estateId, scannedAt(sort: Desc)])
 }
 

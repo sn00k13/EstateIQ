@@ -92,7 +92,7 @@ const navItems: NavItem[] = [
     roles: ['ADMIN', 'SUPER_ADMIN', 'SECURITY', 'RESIDENT'],
   },
   {
-    label: 'Gate scanner',
+    label: 'Scanner',
     href:  '/vehicles/scan',
     icon:  ScanLine,
     roles: ['ADMIN', 'SUPER_ADMIN', 'SECURITY'],
@@ -104,6 +104,21 @@ const navItems: NavItem[] = [
     roles: ['ADMIN', 'SUPER_ADMIN'],
   },
 ]
+
+const NAV_HREFS = navItems.map((i) => i.href)
+
+/** True when pathname matches this item, but not when a longer nav href is a better match (e.g. /vehicles vs /vehicles/scan). */
+function isNavActive(pathname: string, href: string) {
+  if (pathname === href) return true
+  if (!pathname.startsWith(href + '/')) return false
+  const moreSpecific = NAV_HREFS.filter(
+    (h) =>
+      h !== href &&
+      h.startsWith(href + '/') &&
+      (pathname === h || pathname.startsWith(h + '/'))
+  )
+  return moreSpecific.length === 0
+}
 
 const ROLE_BADGE: Record<string, string> = {
   ADMIN:       'bg-purple-900/50 text-purple-300',
@@ -176,7 +191,7 @@ export default function Sidebar() {
       {/* Nav */}
       <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
         {visibleItems.map(({ label, href, icon: Icon }) => {
-          const active = pathname === href || pathname.startsWith(href + '/')
+          const active = isNavActive(pathname, href)
           return (
             <Link
               key={href}
