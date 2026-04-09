@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Plus, Loader2, Boxes, X } from 'lucide-react'
+import { Plus, Loader2, Boxes, X, Search, MapPin, Tag } from 'lucide-react'
 import { fetchJson } from '@/lib/fetchJson'
 import { useResident } from '@/context/ResidentContext'
 import { useSubscription } from '@/context/SubscriptionContext'
@@ -16,10 +16,21 @@ interface Unit {
   type: string | null
 }
 
+type TypeFilter = 'ALL' | 'HAS_TYPE' | 'NO_TYPE'
+
+const TYPE_TABS: { id: TypeFilter; label: string }[] = [
+  { id: 'ALL', label: 'All' },
+  { id: 'HAS_TYPE', label: 'Has type' },
+  { id: 'NO_TYPE', label: 'No type' },
+]
+
 export default function UnitsClient() {
   const { isAdmin } = useResident()
   const { limits } = useSubscription()
   const [units, setUnits] = useState<Unit[]>([])
+  const [filtered, setFiltered] = useState<Unit[]>([])
+  const [search, setSearch] = useState('')
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>('ALL')
   const [loading, setLoading] = useState(true)
   const [showAdd, setShowAdd] = useState(false)
   const [adding, setAdding] = useState(false)
@@ -45,6 +56,23 @@ export default function UnitsClient() {
     void load()
   }, [])
 
+  useEffect(() => {
+    let list =
+      typeFilter === 'ALL'
+        ? units
+        : typeFilter === 'HAS_TYPE'
+          ? units.filter(u => !!u.type?.trim())
+          : units.filter(u => !u.type?.trim())
+    const q = search.toLowerCase().trim()
+    if (q) {
+      list = list.filter(u => {
+        const hay = `${u.number} ${u.block ?? ''} ${u.type ?? ''}`.toLowerCase()
+        return hay.includes(q)
+      })
+    }
+    setFiltered(list)
+  }, [search, units, typeFilter])
+
   async function handleAddUnit(e: React.FormEvent) {
     e.preventDefault()
     if (!form.number.trim()) return
@@ -62,90 +90,191 @@ export default function UnitsClient() {
     if (error) {
       setAddError(error)
     } else if (data) {
-      setUnits(prev => [...prev, data].sort((a, b) => {
-        const ba = (a.block ?? '').localeCompare(b.block ?? '')
-        if (ba !== 0) return ba
-        return a.number.localeCompare(b.number, undefined, { numeric: true })
-      }))
+      setUnits(prev =>
+        [...prev, data].sort((a, b) => {
+          const ba = (a.block ?? '').localeCompare(b.block ?? '')
+          if (ba !== 0) return ba
+          return a.number.localeCompare(b.number, undefined, { numeric: true })
+        })
+      )
       setForm({ number: '', block: '', typeSelect: '', typeOther: '' })
       setShowAdd(false)
     }
     setAdding(false)
   }
 
+  const withStreet = units.filter(u => u.block?.trim()).length
+  const withType = units.filter(u => u.type?.trim()).length
+
   return (
-    <div className="flex-1 overflow-auto p-4 md:p-6">
-      <div className="mx-auto max-w-4xl space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-gray-600">
-            {loading ? '—' : `${units.length} ${units.length === 1 ? 'unit' : 'units'} in this estate`}
-          </p>
-          {isAdmin && (
+    <div className="flex-1 overflow-y-auto p-6 space-y-5">
+      {/* Stats bar — matches Members */}
+      <div className="grid grid-cols-3 gap-4">
+        {[
+          { label: 'Total units', value: units.length, color: 'text-gray-900', icon: Boxes },
+          { label: 'With street', value: withStreet, color: 'text-brand-600', icon: MapPin },
+          { label: 'With type', value: withType, color: 'text-green-600', icon: Tag },
+        ].map(({ label, value, color, icon: Icon }) => (
+          <div key={label} className="bg-white border border-gray-100 rounded-xl p-4">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <p className={cn('text-2xl font-semibold', color)}>{loading ? '—' : value}</p>
+                <p className="text-xs text-gray-500 mt-0.5">{label}</p>
+              </div>
+              <div className="rounded-lg bg-gray-50 p-2 text-gray-400">
+                <Icon size={18} strokeWidth={1.75} />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Toolbar */}
+      <div className="flex items-center gap-3">
+        <div className="flex-1 flex items-center gap-2 bg-white border border-gray-200 rounded px-3 py-2">
+          <Search size={15} className="text-gray-400 shrink-0" />
+          <input
+            type="text"
+            placeholder="Search by unit number, street, or type..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="flex-1 text-sm focus:outline-none bg-transparent"
+          />
+        </div>
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={() => {
+              setShowAdd(true)
+              setAddError('')
+            }}
+            disabled={atUnitCap}
+            title={atUnitCap ? `Plan limit: ${limits.maxUnits} units` : undefined}
+            className={cn(
+              'flex items-center gap-2 px-4 py-2 rounded text-sm font-medium transition-colors',
+              atUnitCap
+                ? 'cursor-not-allowed bg-gray-300 text-white'
+                : 'bg-brand-600 text-white hover:bg-brand-700'
+            )}
+          >
+            <Plus size={15} /> Add unit
+          </button>
+        )}
+      </div>
+
+      {/* Type filter tabs — same pill style as Members role tabs */}
+      <div className="flex flex-wrap items-center gap-2">
+        {TYPE_TABS.map(tab => {
+          const count =
+            tab.id === 'ALL'
+              ? units.length
+              : tab.id === 'HAS_TYPE'
+                ? units.filter(u => !!u.type?.trim()).length
+                : units.filter(u => !u.type?.trim()).length
+          return (
             <button
+              key={tab.id}
               type="button"
-              onClick={() => {
-                setShowAdd(true)
-                setAddError('')
-              }}
-              disabled={atUnitCap}
-              title={atUnitCap ? `Plan limit: ${limits.maxUnits} units` : undefined}
+              onClick={() => setTypeFilter(tab.id)}
               className={cn(
-                'inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white',
-                atUnitCap
-                  ? 'cursor-not-allowed bg-gray-400'
-                  : 'bg-brand-600 hover:bg-brand-700'
+                'px-3 py-1.5 rounded-full text-xs font-medium transition-colors border',
+                typeFilter === tab.id
+                  ? 'bg-gray-900 text-white border-gray-900'
+                  : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
               )}
             >
-              <Plus size={18} />
-              Add unit
+              {tab.label}
+              <span
+                className={cn(
+                  'ml-1 tabular-nums',
+                  typeFilter === tab.id ? 'text-white/80' : 'text-gray-400'
+                )}
+              >
+                ({count})
+              </span>
             </button>
-          )}
-        </div>
+          )
+        })}
+      </div>
 
-        {loading ? (
-          <div className="flex justify-center py-16">
-            <Loader2 className="h-8 w-8 animate-spin text-brand-600" />
-          </div>
-        ) : units.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-gray-50/80 py-16 text-center">
-            <Boxes className="h-12 w-12 text-gray-300" />
-            <p className="mt-4 font-medium text-gray-900">No units yet</p>
-            <p className="mt-1 max-w-sm text-sm text-gray-500">
-              {isAdmin
-                ? 'Add units so you can assign members and track the estate inventory.'
-                : 'Your estate admin can add units from this page.'}
-            </p>
-          </div>
-        ) : (
-          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-            <table className="w-full text-left text-sm">
-              <thead className="border-b border-gray-100 bg-gray-50/80">
-                <tr>
-                  <th className="px-4 py-3 font-semibold text-gray-700">Unit</th>
-                  <th className="hidden px-4 py-3 font-semibold text-gray-700 sm:table-cell">
-                    Street
-                  </th>
-                  <th className="px-4 py-3 font-semibold text-gray-700">Type</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {units.map(u => (
-                  <tr key={u.id} className="hover:bg-gray-50/80">
-                    <td className="px-4 py-3 font-medium text-gray-900">
-                      {u.number}
+      {/* Table — matches Members */}
+      <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-gray-100 bg-gray-50">
+              {['Unit', 'Street', 'Type'].map(h => (
+                <th
+                  key={h}
+                  className="text-left px-4 py-3 text-xs font-medium text-gray-500"
+                >
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {loading && (
+              <tr>
+                <td colSpan={3} className="text-center py-12 text-gray-400 text-sm">
+                  Loading...
+                </td>
+              </tr>
+            )}
+            {!loading && filtered.length === 0 && (
+              <tr>
+                <td colSpan={3} className="text-center py-12 text-gray-400 text-sm">
+                  {search.trim()
+                    ? 'No units match your search.'
+                    : typeFilter !== 'ALL'
+                      ? 'No units in this filter.'
+                      : isAdmin
+                        ? 'No units yet. Add one to get started.'
+                        : 'No units yet. Your estate admin can add units from this page.'}
+                </td>
+              </tr>
+            )}
+            {!loading &&
+              filtered.map(u => {
+                const initials =
+                  u.number.replace(/\s/g, '').slice(0, 2).toUpperCase() || '?'
+                return (
+                  <tr
+                    key={u.id}
+                    className="border-b border-gray-50 hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-green-100 text-brand-700 flex items-center justify-center text-xs font-semibold shrink-0">
+                          {initials}
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">{u.number}</p>
+                          {u.block?.trim() && (
+                            <p className="text-xs text-gray-400 md:hidden">{u.block}</p>
+                          )}
+                        </div>
+                      </div>
                     </td>
-                    <td className="hidden px-4 py-3 text-gray-600 sm:table-cell">
-                      {u.block ?? '—'}
+                    <td className="px-4 py-3 text-gray-600 hidden md:table-cell">
+                      {u.block?.trim() ? u.block : <span className="text-gray-300">—</span>}
                     </td>
                     <td className="px-4 py-3 text-gray-600">
-                      {u.type ?? '—'}
+                      {u.type?.trim() ? (
+                        <span
+                          className="inline-flex max-w-[220px] truncate rounded-full bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-800"
+                          title={u.type}
+                        >
+                          {u.type}
+                        </span>
+                      ) : (
+                        <span className="text-gray-300">—</span>
+                      )}
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                )
+              })}
+          </tbody>
+        </table>
       </div>
 
       {showAdd && (
