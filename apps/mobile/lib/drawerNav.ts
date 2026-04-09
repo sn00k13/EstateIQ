@@ -15,6 +15,7 @@ export interface DrawerNavItem {
 export const DRAWER_NAV_ITEMS: DrawerNavItem[] = [
   { label: 'Dashboard', name: 'index', icon: 'home-outline', roles: ['ADMIN', 'SUPER_ADMIN', 'SECURITY', 'RESIDENT'] },
   { label: 'Residents', name: 'residents', icon: 'people-outline', roles: ['ADMIN', 'SUPER_ADMIN'] },
+  { label: 'Units', name: 'units', icon: 'cube-outline', roles: ['ADMIN', 'SUPER_ADMIN', 'SECURITY', 'RESIDENT'] },
   { label: 'Announcements', name: 'announcements', icon: 'megaphone-outline', roles: ['ADMIN', 'SUPER_ADMIN', 'SECURITY', 'RESIDENT'] },
   { label: 'Levies & Dues', name: 'levies', icon: 'card-outline', roles: ['ADMIN', 'SUPER_ADMIN', 'RESIDENT'] },
   { label: 'Visitors', name: 'visitors', icon: 'shield-checkmark-outline', roles: ['ADMIN', 'SUPER_ADMIN', 'SECURITY', 'RESIDENT'] },
