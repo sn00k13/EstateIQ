@@ -126,7 +126,7 @@ import {
               </View>
               <View style={styles.field}>
                 <Text style={styles.label}>Location</Text>
-                <TextInput style={styles.input} value={form.location} onChangeText={t => setForm(p => ({ ...p, location: t }))} placeholder="e.g. Main gate, Block B" placeholderTextColor="#9ca3af" />
+                <TextInput style={styles.input} value={form.location} onChangeText={t => setForm(p => ({ ...p, location: t }))} placeholder="e.g. Main gate, Oak Avenue" placeholderTextColor="#9ca3af" />
               </View>
               <View style={styles.field}>
                 <Text style={styles.label}>Severity</Text>

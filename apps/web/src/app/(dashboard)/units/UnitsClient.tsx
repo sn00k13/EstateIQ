@@ -123,7 +123,7 @@ export default function UnitsClient() {
                 <tr>
                   <th className="px-4 py-3 font-semibold text-gray-700">Unit</th>
                   <th className="hidden px-4 py-3 font-semibold text-gray-700 sm:table-cell">
-                    Block
+                    Street
                   </th>
                   <th className="px-4 py-3 font-semibold text-gray-700">Type</th>
                 </tr>
@@ -176,13 +176,13 @@ export default function UnitsClient() {
               </div>
               <div>
                 <label className="mb-1 block text-sm font-medium text-gray-700">
-                  Block
+                  Street
                 </label>
                 <input
                   className="w-full rounded-lg border border-gray-200 px-3 py-2 text-gray-900 outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
                   value={form.block}
                   onChange={e => setForm(p => ({ ...p, block: e.target.value }))}
-                  placeholder="Optional"
+                  placeholder="Optional, e.g. Oak Avenue"
                 />
               </div>
               <UnitTypeFields

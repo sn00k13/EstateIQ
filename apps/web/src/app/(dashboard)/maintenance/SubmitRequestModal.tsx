@@ -134,7 +134,7 @@ export default function SubmitRequestModal({ onClose, onSuccess }: Props) {
             </label>
             <input
               type="text" value={form.title} onChange={set('title')} required
-              placeholder="e.g. Burst pipe at Block A entrance"
+              placeholder="e.g. Burst pipe at main street entrance"
               className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-600"
             />
           </div>

@@ -172,7 +172,7 @@ export default function PollDetailModal({
                           <span className="font-normal text-gray-500">
                             {' · '}
                             Unit {v.unit.number}
-                            {v.unit.block ? ` · Block ${v.unit.block}` : ''}
+                            {v.unit.block ? ` · Street ${v.unit.block}` : ''}
                           </span>
                         )}
                       </span>

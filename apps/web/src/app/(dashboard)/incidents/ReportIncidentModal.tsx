@@ -70,7 +70,7 @@ export default function ReportIncidentModal({ onClose, onSuccess }: Props) {
             </label>
             <input
               type="text" value={form.title} onChange={set('title')} required
-              placeholder="e.g. Suspicious person at Block B gate"
+              placeholder="e.g. Suspicious person at main street gate"
               className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
             />
           </div>
@@ -111,7 +111,7 @@ export default function ReportIncidentModal({ onClose, onSuccess }: Props) {
             <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
             <input
               type="text" value={form.location} onChange={set('location')}
-              placeholder="e.g. Main gate, Block A entrance, Car park"
+              placeholder="e.g. Main gate, Oak Avenue entrance, Car park"
               className="w-full border border-gray-200 rounded px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
             />
           </div>

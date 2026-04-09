@@ -212,7 +212,7 @@ export default function AddResidentModal({ onClose, onSuccess }: Props) {
                 <div className="grid grid-cols-2 gap-2">
                   <input
                     type="text"
-                    placeholder="Block (e.g. Block A)"
+                    placeholder="Street (e.g. Oak Avenue)"
                     value={newUnit.block}
                     onChange={e => setNewUnit(p => ({ ...p, block: e.target.value }))}
                     className="w-full border border-brand-200 bg-white rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
