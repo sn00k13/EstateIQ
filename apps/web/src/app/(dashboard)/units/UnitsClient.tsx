@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Plus, Loader2, Boxes, X, Search, MapPin, Tag } from 'lucide-react'
+import { Plus, Loader2, Boxes, X, Search } from 'lucide-react'
 import { fetchJson } from '@/lib/fetchJson'
 import { useResident } from '@/context/ResidentContext'
 import { useSubscription } from '@/context/SubscriptionContext'
@@ -16,21 +16,12 @@ interface Unit {
   type: string | null
 }
 
-type TypeFilter = 'ALL' | 'HAS_TYPE' | 'NO_TYPE'
-
-const TYPE_TABS: { id: TypeFilter; label: string }[] = [
-  { id: 'ALL', label: 'All' },
-  { id: 'HAS_TYPE', label: 'Has type' },
-  { id: 'NO_TYPE', label: 'No type' },
-]
-
 export default function UnitsClient() {
   const { isAdmin } = useResident()
   const { limits } = useSubscription()
   const [units, setUnits] = useState<Unit[]>([])
   const [filtered, setFiltered] = useState<Unit[]>([])
   const [search, setSearch] = useState('')
-  const [typeFilter, setTypeFilter] = useState<TypeFilter>('ALL')
   const [loading, setLoading] = useState(true)
   const [showAdd, setShowAdd] = useState(false)
   const [adding, setAdding] = useState(false)
@@ -57,21 +48,18 @@ export default function UnitsClient() {
   }, [])
 
   useEffect(() => {
-    let list =
-      typeFilter === 'ALL'
-        ? units
-        : typeFilter === 'HAS_TYPE'
-          ? units.filter(u => !!u.type?.trim())
-          : units.filter(u => !u.type?.trim())
     const q = search.toLowerCase().trim()
-    if (q) {
-      list = list.filter(u => {
+    if (!q) {
+      setFiltered(units)
+      return
+    }
+    setFiltered(
+      units.filter(u => {
         const hay = `${u.number} ${u.block ?? ''} ${u.type ?? ''}`.toLowerCase()
         return hay.includes(q)
       })
-    }
-    setFiltered(list)
-  }, [search, units, typeFilter])
+    )
+  }, [search, units])
 
   async function handleAddUnit(e: React.FormEvent) {
     e.preventDefault()
@@ -103,30 +91,22 @@ export default function UnitsClient() {
     setAdding(false)
   }
 
-  const withStreet = units.filter(u => u.block?.trim()).length
-  const withType = units.filter(u => u.type?.trim()).length
-
   return (
     <div className="flex-1 overflow-y-auto p-6 space-y-5">
-      {/* Stats bar — matches Members */}
-      <div className="grid grid-cols-3 gap-4">
-        {[
-          { label: 'Total units', value: units.length, color: 'text-gray-900', icon: Boxes },
-          { label: 'With street', value: withStreet, color: 'text-brand-600', icon: MapPin },
-          { label: 'With type', value: withType, color: 'text-green-600', icon: Tag },
-        ].map(({ label, value, color, icon: Icon }) => (
-          <div key={label} className="bg-white border border-gray-100 rounded-xl p-4">
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <p className={cn('text-2xl font-semibold', color)}>{loading ? '—' : value}</p>
-                <p className="text-xs text-gray-500 mt-0.5">{label}</p>
-              </div>
-              <div className="rounded-lg bg-gray-50 p-2 text-gray-400">
-                <Icon size={18} strokeWidth={1.75} />
-              </div>
+      <div className="max-w-sm">
+        <div className="bg-white border border-gray-100 rounded-xl p-4">
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <p className="text-2xl font-semibold text-gray-900">
+                {loading ? '—' : units.length}
+              </p>
+              <p className="text-xs text-gray-500 mt-0.5">Total units</p>
+            </div>
+            <div className="rounded-lg bg-gray-50 p-2 text-gray-400">
+              <Boxes size={18} strokeWidth={1.75} />
             </div>
           </div>
-        ))}
+        </div>
       </div>
 
       {/* Toolbar */}
@@ -162,41 +142,6 @@ export default function UnitsClient() {
         )}
       </div>
 
-      {/* Type filter tabs — same pill style as Members role tabs */}
-      <div className="flex flex-wrap items-center gap-2">
-        {TYPE_TABS.map(tab => {
-          const count =
-            tab.id === 'ALL'
-              ? units.length
-              : tab.id === 'HAS_TYPE'
-                ? units.filter(u => !!u.type?.trim()).length
-                : units.filter(u => !u.type?.trim()).length
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setTypeFilter(tab.id)}
-              className={cn(
-                'px-3 py-1.5 rounded-full text-xs font-medium transition-colors border',
-                typeFilter === tab.id
-                  ? 'bg-gray-900 text-white border-gray-900'
-                  : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
-              )}
-            >
-              {tab.label}
-              <span
-                className={cn(
-                  'ml-1 tabular-nums',
-                  typeFilter === tab.id ? 'text-white/80' : 'text-gray-400'
-                )}
-              >
-                ({count})
-              </span>
-            </button>
-          )
-        })}
-      </div>
-
       {/* Table — matches Members */}
       <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
         <table className="w-full text-sm">
@@ -225,11 +170,9 @@ export default function UnitsClient() {
                 <td colSpan={3} className="text-center py-12 text-gray-400 text-sm">
                   {search.trim()
                     ? 'No units match your search.'
-                    : typeFilter !== 'ALL'
-                      ? 'No units in this filter.'
-                      : isAdmin
-                        ? 'No units yet. Add one to get started.'
-                        : 'No units yet. Your estate admin can add units from this page.'}
+                    : isAdmin
+                      ? 'No units yet. Add one to get started.'
+                      : 'No units yet. Your estate admin can add units from this page.'}
                 </td>
               </tr>
             )}
