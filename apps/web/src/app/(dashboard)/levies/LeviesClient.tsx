@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { Plus, CreditCard, Trash2, Eye, TrendingUp, Clock, CheckCircle2, Building2, CalendarDays } from 'lucide-react'
+import { Plus, CreditCard, Trash2, TrendingUp, Clock, CheckCircle2, Building2, CalendarDays } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { fetchJson } from '@/lib/fetchJson'
 import CreateLevyModal from './CreateLevyModal'
@@ -200,7 +200,7 @@ export default function LeviesClient() {
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-900">Bank account for levy transfers</p>
               <p className="text-xs text-gray-500 mt-0.5">
-                Residents see these details when they choose bank transfer. Paystack remains available as an alternative.
+                Residents see these details when they pay by bank transfer.
               </p>
               <form onSubmit={saveBankDetails} className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
@@ -288,9 +288,15 @@ export default function LeviesClient() {
             return (
               <div
                 key={levy.id}
-                className="bg-white border border-gray-100 rounded-xl p-5 hover:border-gray-200 transition-colors"
+                className="bg-white border border-gray-100 rounded-xl p-5 hover:border-brand-200 hover:shadow-sm transition-all"
               >
                 <div className="flex items-start gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedLevy(levy)}
+                    className="flex items-start gap-4 flex-1 min-w-0 text-left rounded-lg -m-1 p-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+                    aria-label={`View details for ${levy.title}`}
+                  >
                   <div className={cn(
                     'rounded-xl p-2.5 shrink-0',
                     overdue ? 'bg-red-50 text-red-500' : 'bg-brand-50 text-brand-600'
@@ -354,25 +360,25 @@ export default function LeviesClient() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1 shrink-0">
-                    <button
-                      onClick={() => setSelectedLevy(levy)}
-                      className="p-2 rounded text-gray-400 hover:text-brand-600 hover:bg-brand-50 transition-colors"
-                      title="View payments"
-                    >
-                      <Eye size={14} />
-                    </button>
-                    {isAdmin && (
+                  <span className="self-center text-sm font-medium text-brand-600 shrink-0">
+                    View details
+                  </span>
+                  </button>
+
+                  {isAdmin && (
+                    <div className="flex items-center gap-1 shrink-0 self-start pt-0.5">
                       <button
-                        onClick={() => setDeleteConfirmId(levy.id)}
+                        type="button"
+                        onClick={e => { e.stopPropagation(); setDeleteConfirmId(levy.id) }}
                         disabled={deleting === levy.id}
-                        className="p-2 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-40"
+                        className="p-2 rounded-lg text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-40 border border-transparent hover:border-red-100"
                         title="Delete levy"
+                        aria-label={`Delete levy ${levy.title}`}
                       >
-                        <Trash2 size={14} />
+                        <Trash2 size={16} />
                       </button>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )

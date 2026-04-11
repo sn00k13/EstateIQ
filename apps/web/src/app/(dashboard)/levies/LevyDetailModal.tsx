@@ -86,6 +86,7 @@ export default function LevyDetailModal({ levy, onClose }: Props) {
     load()
   }, [levy.id])
 
+  /* Custom Paystack card payment — re-enable when wired per estate.
   async function handlePaystack(paymentId: string) {
     const { data, error } = await fetchJson<{ authorizationUrl: string }>(
       '/api/payments/initialize',
@@ -101,6 +102,7 @@ export default function LevyDetailModal({ levy, onClose }: Props) {
     }
     if (data?.authorizationUrl) window.open(data.authorizationUrl, '_blank')
   }
+  */
 
   async function executeApprove() {
     if (!approvePaymentId) return
@@ -416,9 +418,6 @@ export default function LevyDetailModal({ levy, onClose }: Props) {
           duesAccountNumber={detail.estate.duesAccountNumber}
           onClose={() => setPayModalPaymentId(null)}
           onSuccess={() => { loadDetail() }}
-          onPaystack={() => {
-            void handlePaystack(payModalPaymentId)
-          }}
         />
       )}
 
@@ -437,7 +436,6 @@ export default function LevyDetailModal({ levy, onClose }: Props) {
             setDetailPaymentId(null)
             setPayModalPaymentId(detailPayment.id)
           }}
-          onPaystack={() => void handlePaystack(detailPayment.id)}
           onApprove={() => setApprovePaymentId(detailPayment.id)}
         />
       )}

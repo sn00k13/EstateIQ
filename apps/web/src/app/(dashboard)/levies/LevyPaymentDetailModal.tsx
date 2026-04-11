@@ -24,7 +24,8 @@ interface Props {
   approving: boolean
   onClose: () => void
   onPayNow: () => void
-  onPaystack: () => void
+  /** Reserved for custom Paystack integration per estate. */
+  onPaystack?: () => void
   onApprove: () => void
 }
 
@@ -43,7 +44,6 @@ export default function LevyPaymentDetailModal({
   approving,
   onClose,
   onPayNow,
-  onPaystack,
   onApprove,
 }: Props) {
   const pendingApproval = p.status === 'PENDING' && p.receiptUrl
@@ -193,6 +193,8 @@ export default function LevyPaymentDetailModal({
                 Approve payment
               </button>
             )}
+            {/*
+            Custom client integration — card payments via Paystack.
             {p.status === 'PENDING' && isMine && (
               <button
                 type="button"
@@ -202,6 +204,7 @@ export default function LevyPaymentDetailModal({
                 Pay online with Paystack
               </button>
             )}
+            */}
           </div>
         </div>
       </div>

@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { X, Copy, Check, Loader2, ExternalLink } from 'lucide-react'
+import { X, Copy, Check, Loader2 } from 'lucide-react'
 import { fetchJson } from '@/lib/fetchJson'
 import { uploadImageFile } from '@/lib/uploadImage'
 import DashboardToast, { type DashboardToastPayload } from '@/components/dashboard/DashboardToast'
@@ -14,7 +14,8 @@ interface Props {
   duesAccountNumber: string | null
   onClose: () => void
   onSuccess: () => void
-  onPaystack: () => void
+  /** Reserved for custom Paystack integration per estate. */
+  onPaystack?: () => void
 }
 
 function fmt(n: number) {
@@ -30,7 +31,6 @@ export default function LevyPayModal({
   duesAccountNumber,
   onClose,
   onSuccess,
-  onPaystack,
 }: Props) {
   const [step, setStep] = useState<1 | 2>(1)
   const [copied, setCopied] = useState(false)
@@ -98,8 +98,9 @@ export default function LevyPayModal({
             <>
               {!hasBank ? (
                 <div className="rounded-lg bg-amber-50 text-amber-900 text-sm px-3 py-2.5">
-                  Your estate admin has not set a dues bank account yet. You can pay online with Paystack
-                  instead, or ask an admin to add bank details under Levies &amp; Dues.
+                  Your estate admin has not set a dues bank account yet. Ask an admin to add bank details
+                  under Levies &amp; Dues so you can pay by transfer.
+                  {/* Online card payment (Paystack) available as custom integration for selected estates. */}
                 </div>
               ) : (
                 <>
@@ -144,6 +145,8 @@ export default function LevyPayModal({
                 </>
               )}
 
+              {/*
+              Custom client integration — card payments via Paystack (re-enable when wired per estate).
               <button
                 type="button"
                 onClick={onPaystack}
@@ -152,6 +155,7 @@ export default function LevyPayModal({
                 <ExternalLink size={14} />
                 Pay online with Paystack
               </button>
+              */}
             </>
           )}
 

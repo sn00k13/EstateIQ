@@ -24,7 +24,7 @@ import {
   }
   
   export default function LeviesTab() {
-    const [paying, setPaying] = useState<string | null>(null)
+    const [loadingDetail, setLoadingDetail] = useState<string | null>(null)
   
     const { data, isLoading, refetch } = useQuery({
       queryKey: ['levies'],
@@ -34,41 +34,31 @@ import {
       },
     })
   
-    async function handleViewPayments(levyId: string) {
+    async function handleViewLevy(levyId: string) {
+      setLoadingDetail(levyId)
       const { data } = await apiFetch<any>(`/api/levies/${levyId}`)
-      if (!data) return
-  
-      const myPayment = data.payments?.find((p: any) => p.status === 'PENDING')
-      if (!myPayment) {
-        Alert.alert('All paid', 'No pending payments for this levy.')
+      setLoadingDetail(null)
+      if (!data) {
+        Alert.alert('Error', 'Could not load levy details.')
         return
       }
-  
+
+      const myPayment = data.payments?.find((p: any) => p.status === 'PENDING')
+      const paid = data.payments?.find((p: any) => p.status === 'PAID')
+      let statusLine = 'No payment record for you on this levy.'
+      if (paid) statusLine = 'Your payment: paid'
+      else if (myPayment?.receiptUrl) statusLine = 'Your payment: pending approval'
+      else if (myPayment) statusLine = 'Your payment: pending — pay by bank transfer (see web app for account details).'
+
       Alert.alert(
-        'Pay levy',
-        `Pay ${fmt(myPayment.amount)} for ${data.title}?`,
+        data.title,
         [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Pay now',
-            onPress: async () => {
-              setPaying(levyId)
-              const { data: init, error } = await apiFetch<{ authorizationUrl: string }>(
-                '/api/payments/initialize',
-                { method: 'POST', body: { paymentId: myPayment.id } }
-              )
-              setPaying(null)
-              if (error) { Alert.alert('Error', error); return }
-              if (init?.authorizationUrl) {
-                Alert.alert(
-                  'Payment',
-                  `Open payment page?\n\n${init.authorizationUrl}`,
-                  [{ text: 'OK' }]
-                )
-              }
-            },
-          },
-        ]
+          data.description ? `${data.description}\n\n` : '',
+          `Amount: ${fmt(data.amount)}`,
+          `\nDue: ${new Date(data.dueDate).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })}`,
+          `\n\n${statusLine}`,
+        ].join(''),
+        [{ text: 'OK' }]
       )
     }
   
@@ -86,7 +76,13 @@ import {
             const pct      = levy._count.total > 0 ? Math.round((levy._count.paid / levy._count.total) * 100) : 0
             const overdue  = new Date(levy.dueDate) < new Date() && levy._count.pending > 0
             return (
-              <View key={levy.id} style={styles.card}>
+              <TouchableOpacity
+                key={levy.id}
+                style={styles.card}
+                activeOpacity={0.72}
+                onPress={() => handleViewLevy(levy.id)}
+                disabled={loadingDetail === levy.id}
+              >
                 <View style={styles.cardTop}>
                   <View style={{ flex: 1 }}>
                     <View style={styles.titleRow}>
@@ -115,18 +111,15 @@ import {
                 <Text style={styles.dueDate}>
                   Due: {new Date(levy.dueDate).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })}
                 </Text>
-  
-                <TouchableOpacity
-                  style={styles.payBtn}
-                  onPress={() => handleViewPayments(levy.id)}
-                  disabled={paying === levy.id}
-                >
-                  {paying === levy.id
-                    ? <ActivityIndicator size="small" color={colors.brand[600]} />
-                    : <Text style={styles.payBtnText}>View & pay</Text>
-                  }
-                </TouchableOpacity>
-              </View>
+
+                <View style={styles.cardFooter}>
+                  {loadingDetail === levy.id ? (
+                    <ActivityIndicator size="small" color={colors.brand[600]} />
+                  ) : (
+                    <Text style={styles.viewDetailsHint}>View details</Text>
+                  )}
+                </View>
+              </TouchableOpacity>
             )
           })}
         </ScrollView>
@@ -151,6 +144,6 @@ import {
     progressBg:    { height: 6, backgroundColor: colors.gray[100], borderRadius: 3, overflow: 'hidden' },
     progressFill:  { height: 6, borderRadius: 3 },
     dueDate:       { fontFamily: fonts.sans, fontSize: 12, color: colors.gray[400] },
-    payBtn:        { borderWidth: 1, borderColor: colors.brand[600], borderRadius: radius.button, paddingVertical: 10, alignItems: 'center' },
-    payBtnText:    { fontFamily: fonts.sansSemiBold, fontSize: 14, color: colors.brand[600] },
+    cardFooter:    { alignItems: 'center', paddingTop: 4 },
+    viewDetailsHint: { fontFamily: fonts.sansSemiBold, fontSize: 14, color: colors.brand[600] },
   })
