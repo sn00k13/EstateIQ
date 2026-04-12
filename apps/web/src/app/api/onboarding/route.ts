@@ -4,6 +4,7 @@ import { prisma } from '@estateiq/database'
 import { logger } from '@/lib/logger'
 import { getPublicAppOrigin } from '@/lib/appUrl'
 import { sendOnboardingWelcomeEmail } from '@/lib/email'
+import { notifyResident } from '@/lib/notifyResident'
 import { isValidNigeriaMobileLocal, sanitizeNigeriaPhoneInput } from '@/lib/nigeriaPhone'
 
 export async function POST(req: Request) {
@@ -91,6 +92,21 @@ export async function POST(req: Request) {
       estateUrl,
     }).catch(err => {
       logger.error('[POST /api/onboarding] Welcome email failed', {
+        message: err instanceof Error ? err.message : String(err),
+        stack: err instanceof Error ? err.stack : undefined,
+      })
+    })
+
+    notifyResident(result.resident.id, {
+      type: 'welcome',
+      title: 'Welcome to Kynjo.Homes',
+      body:
+        plan === 'PROFESSIONAL'
+          ? `${result.estate.name} is set up on Professional. Finish payment to unlock Professional features — you can also complete this anytime from Billing.`
+          : `${result.estate.name} is ready. Open your estate page or dashboard to explore announcements, levies, visitors, and more.`,
+      href: `/${result.estate.slug}`,
+    }).catch(err => {
+      logger.error('[POST /api/onboarding] Welcome notification failed', {
         message: err instanceof Error ? err.message : String(err),
         stack: err instanceof Error ? err.stack : undefined,
       })

@@ -17,10 +17,10 @@ export default function SubscribeSuccessPage() {
           <CheckCircle2 size={32} className="text-green-600" />
         </div>
         <h1 className="text-2xl font-bold text-gray-900 mb-2">
-          Welcome to Professional!
+          Activation successful
         </h1>
         <p className="text-gray-500 text-sm leading-relaxed">
-          Your subscription is now active. All features are unlocked for the next 12 months. Taking you to your dashboard...
+          Your Professional subscription is active. All features are unlocked for the next 12 months. Taking you to your dashboard...
         </p>
         <div className="mt-6 h-1 bg-gray-100 rounded-full overflow-hidden">
           <div className="h-full bg-green-500 rounded-full animate-[progress_4s_linear_forwards]" />

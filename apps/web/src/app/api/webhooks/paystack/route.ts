@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@estateiq/database'
 import { logger } from '@/lib/logger'
+import { notifyResident } from '@/lib/notifyResident'
 import crypto from 'crypto'
 
 export async function POST(req: Request) {
@@ -41,6 +42,11 @@ export async function POST(req: Request) {
     if (event.data?.metadata?.type === 'subscription') {
       const { estateId } = event.data.metadata
       if (estateId) {
+        const estateBefore = await prisma.estate.findUnique({
+          where: { id: estateId },
+          select: { subscriptionStatus: true, name: true, slug: true },
+        })
+
         const now       = new Date()
         const expiresAt = new Date(now)
         expiresAt.setFullYear(expiresAt.getFullYear() + 1) // 1 year from now
@@ -54,6 +60,33 @@ export async function POST(req: Request) {
             subscriptionExpiresAt: expiresAt,
           },
         })
+
+        if (estateBefore?.subscriptionStatus === 'PENDING_PAYMENT') {
+          const admins = await prisma.resident.findMany({
+            where: {
+              estateId,
+              role: { in: ['ADMIN', 'SUPER_ADMIN'] },
+            },
+            select: { id: true },
+          })
+          const estateName = estateBefore.name
+          const href = estateBefore.slug ? `/${estateBefore.slug}` : '/dashboard'
+          await Promise.all(
+            admins.map((r) =>
+              notifyResident(r.id, {
+                type: 'subscription_activated',
+                title: 'Professional activation successful',
+                body: `${estateName} is now on Professional. Your subscription is active for 12 months — all features are unlocked.`,
+                href,
+              }).catch((err) => {
+                logger.error('[POST /api/webhooks/paystack] Activation notification failed', {
+                  residentId: r.id,
+                  message: err instanceof Error ? err.message : String(err),
+                })
+              })
+            )
+          )
+        }
       }
     }
     }
